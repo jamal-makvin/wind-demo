@@ -1,24 +1,10 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { readConfig } = require("./backend/hub88/config");
-const logger = require("./backend/hub88/logger");
-const SignatureService = require("./backend/hub88/services/SignatureService");
-const Hub88Client = require("./backend/hub88/services/Hub88Client");
-const ProviderService = require("./backend/hub88/services/ProviderService");
-const GameService = require("./backend/hub88/services/GameService");
-const GameSessionService = require("./backend/hub88/services/GameSessionService");
-const TransactionService = require("./backend/hub88/services/TransactionService");
-const WalletService = require("./backend/hub88/services/WalletService");
+const crypto = require("crypto");
 
-const config = readConfig();
-const signatureService = new SignatureService(config);
-const hub88Client = new Hub88Client(config, signatureService);
-const providerService = new ProviderService(config, hub88Client);
-const gameService = new GameService(config, hub88Client);
-const sessionService = new GameSessionService(config, hub88Client, gameService);
-const transactionService = new TransactionService(sessionService);
-const walletService = new WalletService(signatureService, transactionService);
+const rootDir = __dirname;
+const port = Number.parseInt(process.env.PORT || "3000", 10);
 
 const walletPaths = new Set([
   "/user/info",
@@ -41,6 +27,54 @@ const contentTypes = {
   ".ico": "image/x-icon",
   ".md": "text/markdown; charset=utf-8"
 };
+
+const mockGames = [
+  ["Sweet Bonanza", "Pragmatic", "SB", "Video Slots"],
+  ["Gates Olympus", "Pragmatic", "GO", "Video Slots"],
+  ["Wanted Wild", "Hacksaw", "WW", "Video Slots"],
+  ["Sugar Rush", "Pragmatic", "SR", "Video Slots"],
+  ["Big Bass", "PlaynGO", "BB", "Video Slots"],
+  ["The Dog House", "Pragmatic", "DH", "Video Slots"],
+  ["Le Bandit", "Hacksaw", "LB", "Video Slots"],
+  ["Zeus Hades", "Nolimit", "ZH", "Video Slots"],
+  ["Fruit Party", "Pragmatic", "FP", "Video Slots"],
+  ["Starlight Princess", "PG Soft", "SP", "Video Slots"],
+  ["Aviator Demo", "Spribe", "AV", "Crash"],
+  ["Mines Pro", "Spribe", "MP", "Minigame"],
+  ["Plinko X", "Spribe", "PX", "Plinko"],
+  ["Tower+", "PG Soft", "T+", "Casual Games"],
+  ["Crash Turbo", "Nolimit", "CT", "Crash"]
+].map(([name, provider, symbol, category], index) => ({
+  id: `mock-${index}`,
+  name,
+  game_code: `wind_mock_${index}_${name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+  provider,
+  product: provider,
+  category,
+  symbol,
+  url_thumb: "",
+  url_background: "",
+  thumbnails: [],
+  backgrounds: [],
+  demo_game_support: true,
+  enabled: true,
+  rtp: "96.00",
+  volatility: 3,
+  platforms: ["GPL_DESKTOP", "GPL_MOBILE"],
+  mobile_support: true,
+  desktop_support: true,
+  languages: ["eng", "rus"],
+  blocked_countries: [],
+  restricted_countries: [],
+  popular: index < 10
+}));
+
+const mockProviders = [...new Set(mockGames.map((game) => game.provider))].map((provider) => ({
+  name: provider,
+  code: provider,
+  logo: "",
+  enabled_currencies: ["RUB", "USD", "EUR"]
+}));
 
 function sendJson(res, status, data) {
   const body = JSON.stringify(data);
@@ -68,66 +102,49 @@ function readBody(req) {
   });
 }
 
-function platformFromRequest(query) {
-  const value = query.get("platform");
-  return value === "GPL_MOBILE" ? "GPL_MOBILE" : "GPL_DESKTOP";
-}
-
-function countryFromLang(lang) {
-  return String(lang || "ru").toLowerCase() === "en" ? "US" : "RU";
+function filterGames(query) {
+  const search = String(query.get("search") || "").trim().toLowerCase();
+  const provider = String(query.get("provider") || "all");
+  return mockGames.filter((game) => {
+    if (provider !== "all" && game.provider !== provider) return false;
+    if (search && !`${game.name} ${game.provider}`.toLowerCase().includes(search)) return false;
+    return true;
+  });
 }
 
 async function handleApi(req, res, url) {
   if (req.method === "GET" && url.pathname === "/api/hub88/providers") {
-    const providers = await providerService.listProviders();
-    return sendJson(res, 200, {
-      mode: hub88Client.isMockMode() ? "mock" : "hub88",
-      providers
-    });
+    return sendJson(res, 200, { mode: "mock", providers: mockProviders });
   }
 
   if (req.method === "GET" && url.pathname === "/api/hub88/products") {
-    const products = await providerService.listProviders();
-    return sendJson(res, 200, {
-      mode: hub88Client.isMockMode() ? "mock" : "hub88",
-      products
-    });
+    return sendJson(res, 200, { mode: "mock", products: mockProviders });
   }
 
   if (req.method === "GET" && url.pathname === "/api/hub88/catalog") {
-    const lang = url.searchParams.get("lang") || "ru";
-    const filters = {
-      country: url.searchParams.get("country") || countryFromLang(lang),
-      platform: platformFromRequest(url.searchParams),
-      search: url.searchParams.get("search") || "",
-      provider: url.searchParams.get("provider") || "all"
-    };
-    const [providers, games] = await Promise.all([
-      providerService.listProviders(),
-      gameService.listGames(filters)
-    ]);
     return sendJson(res, 200, {
-      mode: hub88Client.isMockMode() ? "mock" : "hub88",
-      providers,
-      games
+      mode: "mock",
+      providers: mockProviders,
+      games: filterGames(url.searchParams)
     });
   }
 
   if (req.method === "POST" && url.pathname === "/api/hub88/launch") {
     const { body } = await readBody(req);
-    const language = body.language || body.lang || "ru";
-    const result = await sessionService.launch({
-      game_code: body.game_code,
-      currency: body.currency,
-      game_currency: body.game_currency || body.currency,
-      balance: body.balance,
-      rtp_mode: body.rtp_mode,
-      language,
-      country: body.country || countryFromLang(language),
-      platform: body.platform || "GPL_DESKTOP",
-      user: body.user
+    const game = mockGames.find((item) => item.game_code === body.game_code || item.id === body.game_code) || mockGames[0];
+    const token = crypto.randomUUID();
+    const currency = String(body.currency || "RUB").toUpperCase();
+    return sendJson(res, 200, {
+      url: `about:blank#hub88-mock-${encodeURIComponent(game.game_code)}`,
+      token,
+      user: body.user || `wind_demo_${token.replace(/-/g, "").slice(0, 20)}`,
+      session_id: token,
+      balance: Math.round(Number.parseFloat(body.balance || "0") * 100000),
+      currency,
+      rtp_mode: body.rtp_mode === "standard" ? "standard" : "100",
+      game,
+      mock: true
     });
-    return sendJson(res, 200, result);
   }
 
   return sendJson(res, 404, { error: "not found" });
@@ -146,16 +163,20 @@ async function handleWallet(req, res, url) {
       balance: 0
     });
   }
-  const signature = req.headers["x-hub88-signature"];
-  const response = walletService.handle(url.pathname, parsed.body, parsed.raw, signature);
-  return sendJson(res, 200, response);
+  return sendJson(res, 200, {
+    user: parsed.body.user || "",
+    status: "RS_OK",
+    request_uuid: parsed.body.request_uuid || "",
+    balance: parsed.body.balance || 10000000000,
+    path: url.pathname
+  });
 }
 
 function serveStatic(req, res, url) {
   const decoded = decodeURIComponent(url.pathname);
   const safePath = decoded === "/" ? "/index.html" : decoded;
-  const filePath = path.resolve(config.rootDir, `.${safePath}`);
-  if (!filePath.startsWith(config.rootDir)) {
+  const filePath = path.resolve(rootDir, `.${safePath}`);
+  if (!filePath.startsWith(rootDir)) {
     res.writeHead(403);
     return res.end("Forbidden");
   }
@@ -184,17 +205,13 @@ const server = http.createServer(async (req, res) => {
     }
     return serveStatic(req, res, url);
   } catch (error) {
-    logger.error("request failed", { path: url.pathname, error: error.message, code: error.code });
-    return sendJson(res, error.status || 500, {
-      error: error.code || "SERVER_ERROR",
+    return sendJson(res, 500, {
+      error: "SERVER_ERROR",
       message: error.message || "Internal server error"
     });
   }
 });
 
-server.listen(config.port, () => {
-  logger.info("wind-demo server started", {
-    port: config.port,
-    mode: hub88Client.isMockMode() ? "mock" : "hub88"
-  });
+server.listen(port, () => {
+  console.log(`wind-demo static server started on ${port}`);
 });
