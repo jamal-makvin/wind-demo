@@ -1,0 +1,3839 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wind-Demo</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #05050b;
+        --bg-2: #080914;
+        --panel: rgba(14, 15, 28, 0.78);
+        --panel-solid: #0f1020;
+        --panel-soft: #15162a;
+        --line: rgba(157, 132, 255, 0.18);
+        --line-strong: rgba(172, 106, 255, 0.55);
+        --text: #f7f4ff;
+        --muted: #a7a1bd;
+        --dim: #706b86;
+        --purple: #9b4dff;
+        --purple-2: #6d5cff;
+        --cyan: #26d7ff;
+        --pink: #f04bff;
+        --success: #52e0b6;
+        --danger: #ff5c92;
+        --shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+        --glow: 0 0 30px rgba(155, 77, 255, 0.32);
+        --radius: 18px;
+        --sidebar-width: 292px;
+        --sidebar-collapsed: 78px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at 20% 0%, rgba(88, 68, 255, 0.18), transparent 36rem),
+          radial-gradient(circle at 88% 16%, rgba(35, 215, 255, 0.09), transparent 30rem),
+          linear-gradient(180deg, #060612 0%, #05050b 52%, #070712 100%);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 84%);
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button,
+      a {
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+        min-height: 100vh;
+        transition: grid-template-columns 240ms ease;
+      }
+
+      .app-shell.is-collapsed {
+        grid-template-columns: var(--sidebar-collapsed) minmax(0, 1fr);
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        height: 100vh;
+        padding: 24px 18px;
+        border-right: 1px solid rgba(146, 124, 255, 0.14);
+        background:
+          linear-gradient(180deg, rgba(12, 13, 28, 0.94), rgba(7, 8, 17, 0.96)),
+          radial-gradient(circle at 0% 0%, rgba(155, 77, 255, 0.14), transparent 20rem);
+        backdrop-filter: blur(24px);
+        transition:
+          padding 240ms ease,
+          width 240ms ease;
+      }
+
+      .sidebar-brand {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 0;
+        margin-bottom: 28px;
+      }
+
+      .brand-lockup {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .brand-logo {
+        display: block;
+        width: 195px;
+        height: 54px;
+        object-fit: contain;
+        object-position: left center;
+        filter: drop-shadow(0 0 16px rgba(155, 77, 255, 0.45));
+      }
+
+      .collapse-btn,
+      .menu-btn,
+      .icon-btn {
+        display: grid;
+        place-items: center;
+        width: 46px;
+        height: 46px;
+        border: 1px solid rgba(157, 132, 255, 0.14);
+        border-radius: 50%;
+        background: rgba(12, 13, 24, 0.74);
+        color: var(--text);
+        transition:
+          border-color 180ms ease,
+          background 180ms ease,
+          transform 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      .collapse-btn:hover,
+      .menu-btn:hover,
+      .icon-btn:hover {
+        border-color: rgba(166, 113, 255, 0.54);
+        background: rgba(33, 26, 58, 0.76);
+        box-shadow: 0 0 24px rgba(155, 77, 255, 0.16);
+      }
+
+      .nav-list {
+        display: grid;
+        align-content: start;
+        gap: 8px;
+      }
+
+      .nav-item {
+        position: relative;
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        min-height: 54px;
+        padding: 0 14px 0 10px;
+        border: 1px solid transparent;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--text);
+        text-align: left;
+        transition:
+          background 180ms ease,
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          transform 180ms ease;
+      }
+
+      .nav-item:hover,
+      .nav-item.is-active {
+        border-color: rgba(166, 113, 255, 0.38);
+        background:
+          linear-gradient(90deg, rgba(155, 77, 255, 0.18), rgba(109, 92, 255, 0.08)),
+          rgba(255, 255, 255, 0.03);
+        box-shadow: inset 3px 0 0 #b155ff;
+      }
+
+      .nav-item:hover .nav-tip {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .nav-icon,
+      .mini-icon {
+        display: grid;
+        place-items: center;
+        color: #bb8cff;
+      }
+
+      .nav-icon-img {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        object-fit: cover;
+        object-position: center;
+        filter:
+          drop-shadow(0 0 7px rgba(177, 102, 255, 0.42))
+          drop-shadow(0 0 12px rgba(38, 215, 255, 0.12));
+      }
+
+      .nav-icon-logo {
+        object-fit: contain;
+        border-radius: 0;
+      }
+
+      .nav-icon-home {
+        width: 40px;
+        height: 40px;
+        filter:
+          drop-shadow(0 0 8px rgba(255, 255, 255, 0.22))
+          drop-shadow(0 0 18px rgba(177, 102, 255, 0.82))
+          drop-shadow(0 0 28px rgba(38, 215, 255, 0.24));
+      }
+
+      .nav-copy {
+        display: grid;
+        min-width: 0;
+        transition:
+          opacity 180ms ease,
+          transform 180ms ease;
+      }
+
+      .nav-title {
+        color: #f7f4ff;
+        font-weight: 760;
+        white-space: nowrap;
+      }
+
+      .nav-tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        min-height: 20px;
+        padding: 0 7px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #7b3dff, #4f66ff);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 900;
+      }
+
+      .nav-tip {
+        position: absolute;
+        left: calc(100% + 12px);
+        top: 50%;
+        z-index: 100;
+        width: 220px;
+        padding: 10px 12px;
+        border: 1px solid rgba(157, 132, 255, 0.2);
+        border-radius: 12px;
+        background: rgba(12, 13, 24, 0.92);
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.35;
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-8px, -50%);
+        transition:
+          opacity 160ms ease,
+          transform 160ms ease;
+        backdrop-filter: blur(18px);
+      }
+
+      .sidebar-bottom {
+        display: grid;
+        align-self: end;
+        align-content: start;
+        align-items: start;
+        gap: 8px;
+        width: 100%;
+        margin-bottom: 80px;
+      }
+
+      .side-promo {
+        position: relative;
+        display: block;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 18px;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        background: transparent;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+        line-height: 0;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .side-promo:hover {
+        transform: translateY(-2px);
+        border-color: rgba(177, 102, 255, 0.48);
+        box-shadow:
+          0 20px 52px rgba(0, 0, 0, 0.28),
+          0 0 28px rgba(155, 77, 255, 0.18);
+      }
+
+      .side-promo img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        object-fit: cover;
+      }
+
+      .language-switch {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid rgba(157, 132, 255, 0.12);
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.022);
+      }
+
+      .lang-option {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 30px;
+        padding: 0 8px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #cbc3e5;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 850;
+        transition:
+          background 180ms ease,
+          color 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      .lang-option.is-active {
+        background:
+          linear-gradient(135deg, rgba(155, 77, 255, 0.34), rgba(38, 215, 255, 0.11)),
+          rgba(255, 255, 255, 0.045);
+        color: #fff;
+        box-shadow: 0 0 14px rgba(155, 77, 255, 0.1);
+      }
+
+      .lang-flag {
+        display: none;
+      }
+
+      .side-control {
+        display: grid;
+        grid-template-columns: 17px minmax(0, 1fr) 14px;
+        gap: 7px;
+        align-items: center;
+        min-height: 38px;
+        padding: 0 10px;
+        border: 1px solid rgba(157, 132, 255, 0.12);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.03);
+        color: #ebe6ff;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 760;
+        transition:
+          border-color 180ms ease,
+          background 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      .side-control:hover {
+        border-color: rgba(166, 113, 255, 0.28);
+        background: rgba(255, 255, 255, 0.045);
+        box-shadow: 0 0 20px rgba(155, 77, 255, 0.1);
+      }
+
+      .control-icon,
+      .control-label {
+        display: flex;
+        align-items: center;
+      }
+
+      .control-icon {
+        justify-content: center;
+        color: #d6c5ff;
+      }
+
+      .control-icon svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .control-label {
+        min-width: 0;
+      }
+
+      .control-chevron {
+        width: 14px;
+        height: 14px;
+        color: #c9c0df;
+      }
+
+      .copyright {
+        color: var(--dim);
+        font-size: 12px;
+      }
+
+      .app-shell.is-collapsed .sidebar {
+        padding: 24px 12px;
+      }
+
+      .app-shell.is-collapsed .sidebar-bottom {
+        justify-items: center;
+      }
+
+      .app-shell.is-collapsed .collapse-btn,
+      .app-shell.is-collapsed .nav-copy,
+      .app-shell.is-collapsed .nav-tag,
+      .app-shell.is-collapsed .side-promo,
+      .app-shell.is-collapsed .side-control .control-label,
+      .app-shell.is-collapsed .control-chevron,
+      .app-shell.is-collapsed .copyright {
+        width: 0;
+        opacity: 0;
+        overflow: hidden;
+        transform: translateX(-8px);
+        pointer-events: none;
+      }
+
+      .app-shell.is-collapsed .sidebar-brand {
+        justify-content: center;
+      }
+
+      .app-shell.is-collapsed .brand-lockup {
+        justify-content: center;
+      }
+
+      .app-shell.is-collapsed .brand-logo {
+        width: 48px;
+        height: 34px;
+        object-position: center;
+      }
+
+      .app-shell.is-collapsed .side-promo {
+        display: none;
+      }
+
+      .app-shell.is-collapsed .nav-item {
+        width: 50px;
+        min-height: 50px;
+        height: 50px;
+        grid-template-columns: 1fr;
+        justify-content: center;
+        justify-items: center;
+        padding: 0;
+        border-radius: 14px;
+      }
+
+      .app-shell.is-collapsed .nav-item:hover,
+      .app-shell.is-collapsed .nav-item.is-active {
+        box-shadow:
+          0 0 0 1px rgba(166, 113, 255, 0.42),
+          0 0 22px rgba(155, 77, 255, 0.18);
+        background:
+          radial-gradient(circle at 50% 45%, rgba(155, 77, 255, 0.22), transparent 68%),
+          rgba(255, 255, 255, 0.035);
+      }
+
+      .app-shell.is-collapsed .nav-icon {
+        width: 100%;
+        height: 100%;
+      }
+
+      .app-shell.is-collapsed .nav-icon-img {
+        width: 32px;
+        height: 32px;
+        transform: translateY(7px);
+      }
+
+      .app-shell.is-collapsed .nav-icon-home {
+        width: 38px;
+        height: 38px;
+      }
+
+      .app-shell.is-collapsed .language-switch {
+        grid-template-columns: 36px;
+        justify-content: center;
+        padding: 0;
+        border-color: transparent;
+        background: transparent;
+      }
+
+      .app-shell.is-collapsed .lang-option {
+        min-height: 36px;
+        padding: 0;
+        border: 1px solid rgba(157, 132, 255, 0.12);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .app-shell.is-collapsed .lang-option:not(.is-active) {
+        display: none;
+      }
+
+      .app-shell.is-collapsed .side-control {
+        grid-template-columns: 36px;
+        justify-content: center;
+        min-height: 36px;
+        padding: 0;
+        border-radius: 12px;
+      }
+
+      .app-shell.is-collapsed .side-control .control-label,
+      .app-shell.is-collapsed .side-control .control-chevron {
+        display: none;
+      }
+
+      .main {
+        min-width: 0;
+        padding: 28px 32px 34px;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 18px;
+        z-index: 40;
+        display: grid;
+        grid-template-columns: auto auto minmax(280px, 1fr) auto auto auto auto;
+        gap: 14px;
+        align-items: center;
+        margin-bottom: 34px;
+        padding: 0;
+      }
+
+      .topbar::before {
+        content: "";
+        position: absolute;
+        inset: -8px -10px;
+        z-index: -1;
+        border: 1px solid rgba(157, 132, 255, 0.1);
+        border-radius: 22px;
+        background: rgba(5, 6, 14, 0.58);
+        box-shadow: 0 14px 42px rgba(0, 0, 0, 0.22);
+        backdrop-filter: blur(24px);
+      }
+
+      .mobile-menu {
+        display: none;
+        grid-row: 1;
+        grid-column: 1;
+      }
+
+      #desktopMenuBtn {
+        display: grid;
+        grid-row: 1;
+        grid-column: 1;
+      }
+
+      .top-brand {
+        display: flex;
+        grid-row: 1;
+        grid-column: 2;
+        align-items: center;
+        gap: 0;
+        font-size: 19px;
+        font-weight: 780;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
+
+      .top-brand span {
+        color: #a846ff;
+      }
+
+      .search-shell {
+        position: relative;
+        grid-row: 1;
+        grid-column: 3;
+        min-width: 0;
+      }
+
+      .search-shell svg {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        color: #9b93b5;
+        transform: translateY(-50%);
+      }
+
+      .search-shell input {
+        width: 100%;
+        height: 50px;
+        padding: 0 18px 0 50px;
+        border: 1px solid rgba(157, 132, 255, 0.16);
+        border-radius: 18px;
+        outline: none;
+        background: rgba(8, 9, 20, 0.76);
+        color: var(--text);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          background 180ms ease;
+      }
+
+      .search-shell input:focus {
+        border-color: rgba(166, 113, 255, 0.55);
+        background: rgba(13, 13, 25, 0.9);
+        box-shadow: 0 0 26px rgba(155, 77, 255, 0.14);
+      }
+
+      .balance-control,
+      .rtp-control,
+      .currency-control {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 48px;
+        padding: 0 16px;
+        border: 1px solid rgba(157, 132, 255, 0.2);
+        border-radius: 14px;
+        background:
+          linear-gradient(135deg, rgba(155, 77, 255, 0.2), rgba(42, 40, 84, 0.54)),
+          rgba(9, 10, 20, 0.78);
+        color: #fff;
+        box-shadow: 0 0 24px rgba(155, 77, 255, 0.12);
+        white-space: nowrap;
+      }
+
+      .rtp-control {
+        gap: 4px;
+        min-width: 150px;
+        padding: 4px;
+        border-radius: 14px;
+        background:
+          linear-gradient(135deg, rgba(155, 77, 255, 0.13), rgba(38, 215, 255, 0.045)),
+          rgba(9, 10, 20, 0.82);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.035),
+          0 0 20px rgba(155, 77, 255, 0.1);
+      }
+
+      .rtp-option {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: #bdb5d6;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 880;
+        line-height: 1;
+        cursor: pointer;
+        transition:
+          background 160ms ease,
+          color 160ms ease,
+          box-shadow 160ms ease,
+          transform 160ms ease;
+      }
+
+      .rtp-mode {
+        min-width: 74px;
+        padding: 0 12px;
+      }
+
+      .rtp-value {
+        min-width: 70px;
+        padding: 0 12px;
+      }
+
+      .rtp-option:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.045);
+      }
+
+      .rtp-option.is-active {
+        background: linear-gradient(135deg, #ffbb2e, #ff7d1f);
+        color: #090913;
+        box-shadow:
+          0 8px 22px rgba(255, 145, 31, 0.22),
+          inset 0 1px 0 rgba(255, 255, 255, 0.24);
+        transform: translateY(-1px);
+      }
+
+      .balance-control input {
+        width: 92px;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 850;
+        text-align: right;
+      }
+
+      .balance-control {
+        grid-row: 1;
+        grid-column: 5;
+        gap: 9px;
+        padding: 0 12px 0 14px;
+      }
+
+      .coin {
+        display: block;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        object-fit: cover;
+        overflow: hidden;
+        filter: saturate(1.18) brightness(1.08);
+        box-shadow:
+          0 0 0 2px rgba(255, 255, 255, 0.12),
+          0 0 16px rgba(255, 206, 87, 0.42),
+          0 0 28px rgba(155, 77, 255, 0.18);
+      }
+
+      .currency-control {
+        position: relative;
+        grid-row: 1;
+        grid-column: 6;
+        padding: 0;
+        width: max-content;
+      }
+
+      .rtp-control {
+        grid-row: 1;
+        grid-column: 4;
+      }
+
+      .profile-btn {
+        grid-row: 1;
+        grid-column: 7;
+      }
+
+      .currency-toggle {
+        display: grid;
+        grid-template-columns: 26px 36px 16px;
+        align-items: center;
+        gap: 8px;
+        min-height: 48px;
+        padding: 0 13px;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .currency-flag {
+        position: relative;
+        display: block;
+        width: 26px;
+        height: 18px;
+        flex: 0 0 auto;
+        border-radius: 4px;
+        overflow: hidden;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.16),
+          0 0 10px rgba(155, 77, 255, 0.18);
+      }
+
+      .currency-flag.flag-rub {
+        background: linear-gradient(to bottom, #fff 0 33.33%, #275cf6 33.33% 66.66%, #ef3340 66.66% 100%);
+      }
+
+      .currency-flag.flag-usd {
+        background: #101529 url("сшафлаг.png") center / 100% 100% no-repeat;
+      }
+
+      .currency-flag.flag-eur {
+        background: #1747b8 url("флаг евро.png") center / contain no-repeat;
+      }
+
+      .currency-code {
+        min-width: 32px;
+        line-height: 1;
+      }
+
+      .currency-chevron {
+        color: #b8b0ce;
+        transition: transform 180ms ease;
+      }
+
+      .currency-control.is-open .currency-chevron {
+        transform: rotate(180deg);
+      }
+
+      .currency-menu {
+        position: absolute;
+        left: 0;
+        right: auto;
+        top: calc(100% + 8px);
+        z-index: 80;
+        display: grid;
+        gap: 4px;
+        box-sizing: border-box;
+        width: 100%;
+        padding: 7px;
+        border: 1px solid rgba(157, 132, 255, 0.16);
+        border-radius: 13px;
+        background: rgba(15, 16, 29, 0.96);
+        box-shadow:
+          0 18px 44px rgba(0, 0, 0, 0.34),
+          0 0 26px rgba(155, 77, 255, 0.12);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(-6px);
+        transition:
+          opacity 160ms ease,
+          transform 160ms ease;
+        backdrop-filter: blur(18px);
+      }
+
+      .currency-control.is-open .currency-menu {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+
+      .currency-option {
+        display: grid;
+        grid-template-columns: 26px minmax(0, 1fr) 16px;
+        gap: 7px;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 5px;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        color: #e9e4fb;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 780;
+        text-align: left;
+      }
+
+      .currency-option .currency-flag {
+        align-self: center;
+        justify-self: center;
+      }
+
+      .currency-option span:not(.currency-flag):not(.currency-check) {
+        line-height: 1;
+      }
+
+      .currency-option:hover,
+      .currency-option.is-active {
+        background: rgba(155, 77, 255, 0.16);
+      }
+
+      .currency-check {
+        display: grid;
+        place-items: center;
+        width: 16px;
+        height: 16px;
+        color: #9a7cff;
+        opacity: 0;
+      }
+
+      .currency-option.is-active .currency-check {
+        opacity: 1;
+      }
+
+      .profile-btn {
+        width: 48px;
+        height: 48px;
+      }
+
+      .profile-btn.is-login {
+        width: auto;
+        min-width: 78px;
+        padding: 0 18px;
+        border-radius: 14px;
+        font-weight: 950;
+      }
+
+      .profile-btn .profile-login-text {
+        display: none;
+      }
+
+      .profile-btn.is-login svg {
+        display: none;
+      }
+
+      .profile-btn.is-login .profile-login-text {
+        display: inline;
+      }
+
+      .page {
+        display: none;
+        animation: fadeSlide 280ms ease both;
+      }
+
+      .page.is-active {
+        display: block;
+      }
+
+      .hero-banner {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(360px, 430px) auto;
+        gap: 18px;
+        align-items: center;
+        min-height: 168px;
+        margin-bottom: 26px;
+        padding: 24px 28px;
+        border: 1px solid rgba(166, 113, 255, 0.38);
+        border-radius: 18px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 84% 50%, rgba(38, 215, 255, 0.16), transparent 14rem),
+          linear-gradient(100deg, rgba(155, 77, 255, 0.14), rgba(19, 19, 37, 0.86) 46%, rgba(15, 19, 47, 0.92));
+        box-shadow:
+          0 0 34px rgba(155, 77, 255, 0.18),
+          inset 0 0 46px rgba(38, 215, 255, 0.05);
+      }
+
+      .hero-banner::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        box-shadow: inset 0 0 0 1px rgba(38, 215, 255, 0.18);
+      }
+
+      .hero-copy {
+        position: relative;
+        display: grid;
+        grid-template-columns: 162px minmax(0, 1fr);
+        gap: 30px;
+        align-items: center;
+      }
+
+      .hero-copy img {
+        width: 158px;
+        height: 126px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 28px rgba(155, 77, 255, 0.45));
+      }
+
+      .hero-copy h1 {
+        margin: 0;
+        font-size: clamp(24px, 2.2vw, 34px);
+        line-height: 1.16;
+        letter-spacing: 0;
+      }
+
+      .hero-copy h1 span {
+        color: #b44dff;
+      }
+
+      .hero-visual {
+        position: relative;
+        width: 420px;
+        height: 142px;
+      }
+
+      .hero-rocket {
+        position: absolute;
+        right: -8px;
+        top: -50px;
+        width: 390px;
+        height: 244px;
+        object-fit: contain;
+        filter:
+          drop-shadow(0 0 14px rgba(38, 215, 255, 0.4))
+          drop-shadow(0 0 28px rgba(155, 77, 255, 0.45));
+      }
+
+      .hero-banner > .cta {
+        min-width: 136px;
+        border: 1px solid rgba(118, 112, 255, 0.68);
+        background:
+          linear-gradient(135deg, rgba(155, 77, 255, 0.2), rgba(38, 215, 255, 0.06)),
+          rgba(20, 18, 55, 0.44);
+        box-shadow:
+          inset 0 0 18px rgba(109, 92, 255, 0.22),
+          0 0 22px rgba(109, 92, 255, 0.22);
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 18px;
+        margin: 24px 0 16px;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .section-title h2 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: -0.02em;
+      }
+
+      .section-title p {
+        margin: 5px 0 0;
+        color: var(--muted);
+      }
+
+      .flame,
+      .spark {
+        display: grid;
+        place-items: center;
+        color: #f04bff;
+      }
+
+      .section-icon-img {
+        position: relative;
+        z-index: 1;
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        object-fit: cover;
+        object-position: center;
+        filter:
+          drop-shadow(0 0 10px rgba(177, 102, 255, 0.55))
+          drop-shadow(0 0 18px rgba(240, 75, 255, 0.2));
+      }
+
+      .section-icon-glow {
+        position: relative;
+        isolation: isolate;
+      }
+
+      .section-icon-glow::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 2px;
+        z-index: 0;
+        width: 26px;
+        height: 9px;
+        border-radius: 999px;
+        background: radial-gradient(ellipse at center, rgba(240, 75, 255, 0.62), rgba(177, 102, 255, 0.28) 48%, transparent 72%);
+        filter: blur(5px);
+        transform: translateX(-50%);
+      }
+
+      .text-link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #c56cff;
+        font: inherit;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 38px;
+        margin: 4px 0 22px;
+        padding: 0 14px 0 12px;
+        border: 1px solid rgba(157, 132, 255, 0.18);
+        border-radius: 999px;
+        background:
+          linear-gradient(135deg, rgba(155, 77, 255, 0.13), rgba(38, 215, 255, 0.04)),
+          rgba(255, 255, 255, 0.025);
+        color: #d9c7ff;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 820;
+        cursor: pointer;
+        transition: border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+      }
+
+      .back-link:hover {
+        border-color: rgba(177, 102, 255, 0.46);
+        background: rgba(155, 77, 255, 0.11);
+        box-shadow: 0 0 22px rgba(155, 77, 255, 0.14);
+        transform: translateX(-2px);
+      }
+
+      .filters-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 0 16px;
+        border: 1px solid rgba(157, 132, 255, 0.15);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.035);
+        color: #d8d1ee;
+        font-weight: 750;
+        transition:
+          border-color 180ms ease,
+          background 180ms ease,
+          color 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      .chip.is-active,
+      .chip:hover {
+        border-color: rgba(166, 113, 255, 0.46);
+        background: rgba(155, 77, 255, 0.16);
+        color: #fff;
+        box-shadow: 0 0 20px rgba(155, 77, 255, 0.12);
+      }
+
+      .game-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 18px;
+      }
+
+      .game-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        flex: 0 0 clamp(148px, 13vw, 168px);
+        min-height: 0;
+        border: 1px solid rgba(157, 132, 255, 0.16);
+        border-radius: 11px;
+        overflow: hidden;
+        background: #11111a;
+        box-shadow:
+          0 14px 30px rgba(0, 0, 0, 0.22),
+          inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        transform: translateZ(0);
+        transition:
+          transform 220ms ease,
+          border-color 220ms ease,
+          box-shadow 220ms ease,
+          filter 220ms ease;
+      }
+
+      .game-card:hover {
+        border-color: rgba(166, 113, 255, 0.6);
+        box-shadow:
+          0 18px 48px rgba(0, 0, 0, 0.34),
+          0 0 34px rgba(155, 77, 255, 0.18),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        filter: saturate(1.08);
+        transform: translateY(-4px) scale(1.018);
+      }
+
+      .game-card-spacer {
+        flex: 0 0 clamp(148px, 13vw, 168px);
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .game-art {
+        position: relative;
+        display: block;
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 70% 22%, var(--game-glow), transparent 8rem),
+          linear-gradient(135deg, var(--game-a), var(--game-b));
+        isolation: isolate;
+      }
+
+      .game-art::before {
+        content: "";
+        position: absolute;
+        inset: auto 0 0;
+        z-index: 1;
+        height: 44%;
+        background: linear-gradient(180deg, transparent, rgba(8, 9, 18, 0.38));
+        pointer-events: none;
+      }
+
+      .game-art img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scale(1.01);
+      }
+
+      .game-art-placeholder {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+      }
+
+      .game-art-placeholder::before {
+        content: "";
+        position: absolute;
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.28), transparent 32%),
+          linear-gradient(135deg, var(--game-c), transparent);
+        box-shadow:
+          0 0 34px var(--game-glow),
+          inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+        transform: rotate(12deg);
+      }
+
+      .game-art-placeholder::after {
+        content: attr(data-symbol);
+        position: relative;
+        z-index: 1;
+        color: #fff;
+        font-size: 32px;
+        font-weight: 950;
+        text-shadow: 0 6px 22px rgba(0, 0, 0, 0.5);
+      }
+
+      .game-top-badge {
+        position: absolute;
+        top: 9px;
+        right: 9px;
+        z-index: 2;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 20px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #bf6bff, #7a5cff);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 950;
+        line-height: 1;
+        box-shadow: 0 6px 18px rgba(155, 77, 255, 0.35);
+      }
+
+      .game-footer {
+        position: relative;
+        z-index: 2;
+        display: grid;
+        gap: 6px;
+        min-height: 60px;
+        padding: 10px 12px 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+        background: #12121a;
+      }
+
+      .game-name {
+        color: #fff;
+        font-size: 13.5px;
+        font-weight: 950;
+        line-height: 1.12;
+        text-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      }
+
+      .game-provider {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #8f89a5;
+        font-size: 11px;
+        font-weight: 650;
+      }
+
+      .game-provider::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #b65cff;
+        box-shadow: 0 0 10px rgba(182, 92, 255, 0.7);
+      }
+
+      .game-actions {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        background: rgba(4, 5, 12, 0.62);
+        opacity: 0;
+        transform: translateY(8px);
+        transition:
+          opacity 200ms ease,
+          transform 200ms ease;
+        backdrop-filter: blur(8px);
+      }
+
+      .game-card:hover .game-actions {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .play-btn,
+      .favorite-btn,
+      .cta {
+        border: 0;
+        border-radius: 12px;
+        color: #fff;
+        font-weight: 900;
+        transition:
+          transform 170ms ease,
+          box-shadow 170ms ease,
+          filter 170ms ease;
+      }
+
+      .play-btn,
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 18px;
+        background: linear-gradient(135deg, #9b4dff, #6d5cff);
+        box-shadow: 0 0 24px rgba(155, 77, 255, 0.24);
+      }
+
+      .play-btn:hover,
+      .favorite-btn:hover,
+      .cta:hover {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+        box-shadow: 0 0 30px rgba(155, 77, 255, 0.34);
+      }
+
+      .favorite-btn {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .trend-row {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .trend-card {
+        min-height: 150px;
+        padding: 18px 14px 14px;
+        border: 1px solid rgba(157, 132, 255, 0.16);
+        border-radius: 16px;
+        background:
+          radial-gradient(circle at 60% 0%, rgba(155, 77, 255, 0.18), transparent 8rem),
+          rgba(255, 255, 255, 0.035);
+        text-align: center;
+        transition:
+          transform 200ms ease,
+          border-color 200ms ease,
+          background 200ms ease;
+      }
+
+      .trend-card:hover {
+        border-color: rgba(166, 113, 255, 0.52);
+        background: rgba(155, 77, 255, 0.08);
+        transform: translateY(-4px);
+      }
+
+      .trend-icon {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 12px;
+        border-radius: 20px;
+        background:
+          linear-gradient(135deg, rgba(155, 77, 255, 0.2), rgba(38, 215, 255, 0.1)),
+          rgba(255, 255, 255, 0.04);
+        color: #b666ff;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+
+      .trend-card strong {
+        display: block;
+        color: #fff;
+        font-size: 16px;
+      }
+
+      .trend-card span {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.3;
+      }
+
+      .promo-slim {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 18px;
+        align-items: center;
+        margin: 22px 0;
+        padding: 18px 22px;
+        border: 1px solid rgba(157, 132, 255, 0.22);
+        border-radius: 16px;
+        background:
+          linear-gradient(90deg, rgba(155, 77, 255, 0.15), rgba(38, 215, 255, 0.06)),
+          rgba(255, 255, 255, 0.025);
+      }
+
+      .promo-slim strong {
+        display: block;
+        color: #fff;
+        font-size: 17px;
+      }
+
+      .promo-slim span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+      }
+
+      .partners-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+        gap: 18px;
+      }
+
+      .partner-panel,
+      .info-panel,
+      .quote-panel {
+        border: 1px solid rgba(157, 132, 255, 0.16);
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at 88% 10%, rgba(155, 77, 255, 0.14), transparent 12rem),
+          rgba(255, 255, 255, 0.035);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+      }
+
+      .partner-panel {
+        padding: 30px;
+      }
+
+      .partner-logo-mark {
+        display: block;
+        width: min(176px, 44%);
+        height: auto;
+        margin: 0 0 22px;
+        object-fit: contain;
+        filter: drop-shadow(0 0 24px rgba(177, 102, 255, 0.36));
+      }
+
+      .partner-panel h1,
+      .page-title h1 {
+        margin: 0;
+        font-size: clamp(32px, 4.4vw, 58px);
+        line-height: 1.02;
+        letter-spacing: -0.045em;
+      }
+
+      .partner-panel h1 span,
+      .page-title h1 span {
+        color: #b44dff;
+      }
+
+      .partner-panel p,
+      .page-title p {
+        max-width: 720px;
+        margin: 16px 0 0;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.65;
+      }
+
+      .partner-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .ghost-cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 44px;
+        padding: 0 18px;
+        border: 1px solid rgba(157, 132, 255, 0.22);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.035);
+        color: #fff;
+        font-weight: 850;
+      }
+
+      .info-panel {
+        display: grid;
+        gap: 14px;
+        padding: 22px;
+      }
+
+      .info-line {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .info-line strong {
+        display: block;
+        color: #fff;
+        margin-bottom: 3px;
+      }
+
+      .info-line span {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .benefit-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .benefit-card,
+      .step-card {
+        padding: 20px;
+        border: 1px solid rgba(157, 132, 255, 0.14);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.032);
+      }
+
+      .benefit-card strong,
+      .step-card strong {
+        display: block;
+        color: #fff;
+        margin: 12px 0 8px;
+        font-size: 17px;
+      }
+
+      .benefit-card span,
+      .step-card span {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .steps-grid,
+      .quotes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .step-number {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #9b4dff, #26d7ff);
+        color: #fff;
+        font-weight: 950;
+      }
+
+      .quote-panel {
+        padding: 20px;
+      }
+
+      .quote-panel p {
+        margin: 0;
+        color: #d7d0e9;
+        line-height: 1.55;
+      }
+
+      .quote-panel strong {
+        display: block;
+        margin-top: 16px;
+        color: #fff;
+      }
+
+      .trending-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .trend-large {
+        position: relative;
+        min-height: 206px;
+        padding: 22px;
+        border: 1px solid rgba(157, 132, 255, 0.16);
+        border-radius: 18px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 82% 12%, rgba(38, 215, 255, 0.12), transparent 8rem),
+          linear-gradient(135deg, rgba(155, 77, 255, 0.14), rgba(255, 255, 255, 0.026));
+        transition:
+          transform 200ms ease,
+          border-color 200ms ease,
+          box-shadow 200ms ease;
+      }
+
+      .trend-large:hover {
+        border-color: rgba(166, 113, 255, 0.5);
+        box-shadow: var(--glow);
+        transform: translateY(-4px);
+      }
+
+      .trend-large .trend-icon {
+        margin: 0 0 24px;
+      }
+
+      .trend-large strong {
+        display: block;
+        color: #fff;
+        font-size: 22px;
+      }
+
+      .trend-large span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .trend-platforms {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 20px 0;
+      }
+
+      .trend-platforms span {
+        padding: 8px 12px;
+        border: 1px solid rgba(157, 132, 255, 0.12);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.035);
+        color: #d4cdea;
+        font-weight: 740;
+      }
+
+      .access-card {
+        position: relative;
+        width: min(430px, calc(100vw - 32px));
+        padding: 28px;
+        border: 1px solid rgba(177, 102, 255, 0.36);
+        border-radius: 22px;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 88% 12%, rgba(38, 215, 255, 0.16), transparent 9rem),
+          radial-gradient(circle at 8% 0%, rgba(240, 75, 255, 0.2), transparent 10rem),
+          linear-gradient(145deg, rgba(17, 18, 35, 0.96), rgba(8, 9, 20, 0.98));
+        box-shadow:
+          0 34px 100px rgba(0, 0, 0, 0.54),
+          0 0 46px rgba(155, 77, 255, 0.18);
+      }
+
+      .access-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(240, 75, 255, 0.22), transparent 34%, rgba(38, 215, 255, 0.14));
+        mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        mask-composite: exclude;
+        padding: 1px;
+      }
+
+      .access-icon {
+        display: grid;
+        place-items: center;
+        width: 54px;
+        height: 54px;
+        margin-bottom: 18px;
+        border: 1px solid rgba(177, 102, 255, 0.38);
+        border-radius: 16px;
+        background:
+          radial-gradient(circle at 50% 42%, rgba(177, 102, 255, 0.32), transparent 70%),
+          rgba(255, 255, 255, 0.045);
+        color: #d894ff;
+        box-shadow: 0 0 34px rgba(177, 102, 255, 0.22);
+      }
+
+      .access-card h2 {
+        position: relative;
+        margin: 0;
+        color: #fff;
+        font-size: 27px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+
+      .access-card p {
+        position: relative;
+        margin: 12px 0 22px;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .access-form {
+        position: relative;
+        display: grid;
+        gap: 12px;
+      }
+
+      .access-input {
+        width: 100%;
+        min-height: 50px;
+        padding: 0 16px;
+        border: 1px solid rgba(157, 132, 255, 0.22);
+        border-radius: 14px;
+        outline: none;
+        background: rgba(5, 6, 16, 0.78);
+        color: #fff;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        transition:
+          border-color 180ms ease,
+          box-shadow 180ms ease,
+          background 180ms ease;
+      }
+
+      .access-input:focus {
+        border-color: rgba(177, 102, 255, 0.72);
+        background: rgba(11, 12, 26, 0.92);
+        box-shadow: 0 0 0 4px rgba(155, 77, 255, 0.14);
+      }
+
+      .access-error {
+        min-height: 18px;
+        color: #ff7fb0;
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      .access-actions {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .access-submit {
+        min-height: 46px;
+        border: 0;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #b14dff, #6d5cff);
+        color: #fff;
+        font-weight: 900;
+        box-shadow: 0 12px 34px rgba(155, 77, 255, 0.26);
+      }
+
+      .access-cancel {
+        min-height: 46px;
+        padding: 0 16px;
+        border: 1px solid rgba(157, 132, 255, 0.16);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.035);
+        color: #d7d0ee;
+        font-weight: 820;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: none;
+        place-items: center;
+        padding: 20px;
+        background: rgba(1, 2, 8, 0.78);
+        opacity: 0;
+        transition: opacity 220ms ease;
+        backdrop-filter: blur(18px);
+      }
+
+      .modal.is-open {
+        display: grid;
+        opacity: 1;
+      }
+
+      .modal-panel {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        width: min(1180px, calc(100vw - 28px));
+        height: min(760px, calc(100vh - 28px));
+        border: 1px solid rgba(157, 132, 255, 0.22);
+        border-radius: 22px;
+        overflow: hidden;
+        background: #090a14;
+        box-shadow:
+          0 30px 90px rgba(0, 0, 0, 0.66),
+          0 0 50px rgba(155, 77, 255, 0.22);
+        transform: translateY(16px) scale(0.98);
+        animation: modalIn 240ms ease forwards;
+      }
+
+      .modal-toolbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        min-height: 64px;
+        padding: 12px;
+        border-bottom: 1px solid rgba(157, 132, 255, 0.12);
+        background: rgba(15, 16, 32, 0.84);
+      }
+
+      .modal-title {
+        display: grid;
+        gap: 2px;
+      }
+
+      .modal-title strong {
+        overflow: hidden;
+        color: #fff;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .modal-title span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .game-stage {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-height: 0;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(155, 77, 255, 0.12), transparent 24rem),
+          #060711;
+      }
+
+      .fake-iframe {
+        display: grid;
+        place-items: center;
+        width: min(880px, calc(100% - 38px));
+        height: min(480px, calc(100% - 38px));
+        border: 1px solid rgba(157, 132, 255, 0.22);
+        border-radius: 20px;
+        background:
+          linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+          rgba(14, 15, 28, 0.78);
+        background-size: 44px 44px;
+        box-shadow: inset 0 0 60px rgba(155, 77, 255, 0.08);
+      }
+
+      .loader {
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+        color: #fff;
+        font-weight: 850;
+      }
+
+      .spinner {
+        width: 42px;
+        height: 42px;
+        border: 4px solid rgba(157, 132, 255, 0.18);
+        border-top-color: #a64cff;
+        border-radius: 50%;
+        animation: spin 900ms linear infinite;
+      }
+
+      .ready .spinner {
+        display: none;
+      }
+
+      .loader span:last-child {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes modalIn {
+        to {
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes fadeSlide {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 1320px) {
+        .trend-row {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .trending-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 1080px) {
+        .app-shell,
+        .app-shell.is-collapsed {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .sidebar {
+          position: fixed;
+          inset: 0 auto 0 0;
+          width: min(320px, calc(100vw - 38px));
+          transform: translateX(-104%);
+          transition: transform 240ms ease;
+        }
+
+        body.has-sidebar .sidebar {
+          transform: translateX(0);
+        }
+
+        .app-shell.is-collapsed .sidebar {
+          padding: 24px 18px;
+        }
+
+        .app-shell.is-collapsed .collapse-btn,
+        .app-shell.is-collapsed .nav-copy,
+        .app-shell.is-collapsed .nav-tag,
+        .app-shell.is-collapsed .side-promo,
+        .app-shell.is-collapsed .side-control .control-label,
+        .app-shell.is-collapsed .language-label,
+        .app-shell.is-collapsed .control-chevron,
+        .app-shell.is-collapsed .copyright {
+          width: auto;
+          opacity: 1;
+          overflow: visible;
+          transform: none;
+          pointer-events: auto;
+        }
+
+        .app-shell.is-collapsed .language-switch {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          justify-content: stretch;
+          padding: 4px;
+          border-color: rgba(157, 132, 255, 0.12);
+          background: rgba(255, 255, 255, 0.022);
+        }
+
+        .app-shell.is-collapsed .lang-option {
+          display: flex;
+          min-height: 30px;
+          padding: 0 8px;
+          border: 0;
+          border-radius: 8px;
+        }
+
+        .app-shell.is-collapsed .lang-option:not(.is-active) {
+          display: flex;
+        }
+
+        .app-shell.is-collapsed .lang-option.is-active {
+          background:
+            linear-gradient(135deg, rgba(155, 77, 255, 0.34), rgba(38, 215, 255, 0.11)),
+            rgba(255, 255, 255, 0.045);
+        }
+
+        .app-shell.is-collapsed .side-control {
+          grid-template-columns: 17px minmax(0, 1fr) 14px;
+          justify-content: stretch;
+          min-height: 38px;
+          padding: 0 10px;
+          border-radius: 10px;
+        }
+
+        .app-shell.is-collapsed .side-control .control-label {
+          display: flex;
+        }
+
+        .app-shell.is-collapsed .side-control .control-chevron {
+          display: block;
+        }
+
+        .app-shell.is-collapsed .sidebar-bottom {
+          justify-items: stretch;
+          margin-bottom: 0;
+        }
+
+        .app-shell.is-collapsed .side-promo {
+          display: block;
+        }
+
+        .app-shell.is-collapsed .brand-logo {
+          width: 195px;
+          height: 54px;
+          object-position: left center;
+        }
+
+        .app-shell.is-collapsed .nav-item {
+          width: auto;
+          min-height: 54px;
+          height: auto;
+          grid-template-columns: 38px minmax(0, 1fr) auto;
+          justify-content: stretch;
+          justify-items: stretch;
+          padding: 0 14px 0 10px;
+          border-radius: 12px;
+        }
+
+        .collapse-btn {
+          display: grid;
+        }
+
+        .mobile-menu {
+          display: grid;
+        }
+
+        #desktopMenuBtn {
+          display: none;
+        }
+
+        .topbar {
+          grid-template-columns: auto auto minmax(220px, 1fr) auto auto auto auto;
+        }
+
+        .top-brand {
+          font-size: 18px;
+        }
+
+        .hero-banner,
+        .partners-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-visual {
+          display: none;
+        }
+
+        .game-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .benefit-grid,
+        .steps-grid,
+        .quotes-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 760px) {
+        .main {
+          padding: 18px 12px 24px;
+        }
+
+        .topbar {
+          position: sticky;
+          top: 10px;
+          grid-template-columns: auto 1fr auto;
+          gap: 10px;
+          margin-bottom: 18px;
+        }
+
+        .topbar::before {
+          inset: -6px;
+        }
+
+        .top-brand {
+          order: 0;
+          justify-self: start;
+        }
+
+        .mobile-menu,
+        .profile-btn {
+          order: 0;
+        }
+
+        .profile-btn {
+          grid-column: auto;
+          grid-row: auto;
+          justify-self: end;
+        }
+
+        .search-shell {
+          grid-column: 1 / -1;
+          grid-row: auto;
+          order: 1;
+        }
+
+        .balance-control,
+        .rtp-control,
+        .currency-control {
+          grid-row: auto;
+          order: 2;
+          min-height: 44px;
+          padding: 0 12px;
+        }
+
+        .balance-control {
+          grid-column: 2 / 3;
+          gap: 8px;
+          padding: 0 10px 0 12px;
+        }
+
+        .balance-control input {
+          width: 88px;
+        }
+
+        .rtp-control {
+          grid-column: 1 / 2;
+          min-width: 0;
+          padding: 4px;
+        }
+
+        .rtp-mode,
+        .rtp-value {
+          min-width: 0;
+          min-height: 36px;
+          padding: 0 9px;
+          font-size: 12px;
+        }
+
+        .currency-control {
+          grid-column: 3 / 4;
+          justify-content: center;
+        }
+
+        .currency-toggle {
+          min-height: 44px;
+          padding: 0 12px;
+        }
+
+        .profile-btn {
+          width: 44px;
+          height: 44px;
+        }
+
+        .hero-banner {
+          padding: 22px;
+        }
+
+        .hero-copy {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+
+        .hero-copy img {
+          width: 136px;
+          height: 104px;
+        }
+
+        .section-head {
+          align-items: start;
+          flex-direction: column;
+        }
+
+        .game-grid,
+        .trending-grid {
+          gap: 10px;
+        }
+
+        .game-card {
+          flex-basis: clamp(142px, calc((100% - 10px) / 2), 164px);
+          border-radius: 10px;
+        }
+
+        .game-name {
+          font-size: 13px;
+        }
+
+        .trend-row,
+        .benefit-grid,
+        .steps-grid,
+        .quotes-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .promo-slim {
+          grid-template-columns: 1fr;
+        }
+
+        .modal {
+          padding: 0;
+        }
+
+        .modal-panel {
+          width: 100vw;
+          height: 100vh;
+          border-radius: 0;
+        }
+
+        .modal-toolbar {
+          grid-template-columns: 1fr;
+        }
+
+        .modal-actions {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+        }
+
+        .modal-actions .cta {
+          padding: 0 8px;
+          font-size: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell" id="appShell">
+      <aside class="sidebar" id="sidebar" aria-label="Wind-Demo navigation">
+        <div>
+          <div class="sidebar-brand">
+            <div class="brand-lockup">
+              <img class="brand-logo" src="assets/wind-demo-logo-clean.png" alt="Wind-Demo" />
+            </div>
+            <button class="collapse-btn" id="collapseBtn" type="button" aria-label="Свернуть меню">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <nav class="nav-list">
+            <button class="nav-item is-active" type="button" data-page="home">
+              <span class="nav-icon">
+                <img class="nav-icon-img nav-icon-home" src="главная.png" alt="" aria-hidden="true" />
+              </span>
+              <span class="nav-copy"><span class="nav-title">Главная</span></span>
+              <span class="nav-tip">Поиск, провайдеры, категории и запуск демо-игр.</span>
+            </button>
+
+            <button class="nav-item" type="button" data-page="partners">
+              <span class="nav-icon">
+                <img class="nav-icon-img nav-icon-logo" src="ЛОГО ВИНД hero.png" alt="" aria-hidden="true" />
+              </span>
+              <span class="nav-copy"><span class="nav-title">WIND Partners</span></span>
+              <span class="nav-tip">CPA, Hybrid, выплаты и быстрый старт.</span>
+            </button>
+
+            <button class="nav-item" type="button" data-page="trending">
+              <span class="nav-icon">
+                <img class="nav-icon-img" src="хайповые игры.png" alt="" aria-hidden="true" />
+              </span>
+              <span class="nav-copy"><span class="nav-title">Хайповые игры</span></span>
+              <span class="nav-tag">NEW</span>
+              <span class="nav-tip">Версии для TikTok, Instagram и Shorts-креативов.</span>
+            </button>
+          </nav>
+        </div>
+
+        <div class="sidebar-bottom">
+          <a class="side-promo partner-link" href="https://www.wind-partners.com/apply?ref=DM5K5M" aria-label="WIND Partners">
+            <img
+              id="sidePromoImage"
+              src="ру-баннер (2).png"
+              data-src-ru="ру-баннер (2).png"
+              data-src-en="англ-баннер.png"
+              alt="WIND Partners"
+            />
+          </a>
+
+          <div class="language-switch" aria-label="Выбор языка">
+            <button class="lang-option is-active" type="button" data-lang="ru" aria-pressed="true">
+              <span class="lang-flag" aria-hidden="true">🇷🇺</span>
+              <span class="language-label">RU</span>
+            </button>
+            <button class="lang-option" type="button" data-lang="en" aria-pressed="false">
+              <span class="lang-flag" aria-hidden="true">🇺🇸</span>
+              <span class="language-label">EN</span>
+            </button>
+          </div>
+
+          <a class="side-control support-control" href="https://t.me/m/kkLM086pYjU6" target="_blank" rel="noopener noreferrer">
+            <span class="control-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 12a8 8 0 0 1 16 0v4a3 3 0 0 1-3 3h-2v-6h5M4 16a3 3 0 0 0 3 3h2v-6H4" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+              </svg>
+            </span>
+            <span class="control-label">Поддержка</span>
+            <svg class="control-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </a>
+
+          <div class="copyright">© 2026 Wind Partners. Все права защищены.</div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button class="menu-btn mobile-menu" id="mobileMenuBtn" type="button" aria-label="Открыть меню">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+
+          <button class="menu-btn" id="desktopMenuBtn" type="button" aria-label="Свернуть меню">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+
+          <div class="top-brand">WIND-<span>DEMO</span></div>
+
+          <label class="search-shell">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m21 21-4.5-4.5M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <input id="searchInput" type="search" placeholder="Поиск игры или провайдера" />
+          </label>
+
+          <label class="balance-control">
+            <input id="balanceInput" inputmode="decimal" value="100000.00" aria-label="Демо-баланс" />
+            <img class="coin" id="balanceCoin" src="рубль знак.png" alt="RUB" />
+          </label>
+
+          <div class="currency-control" id="currencyControl">
+            <button class="currency-toggle" id="currencyToggle" type="button" aria-haspopup="listbox" aria-expanded="false" aria-label="Валюта">
+              <span class="currency-flag flag-rub" id="currencyFlag" aria-hidden="true"></span>
+              <span class="currency-code" id="currencyCode">RUB</span>
+              <svg class="currency-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m7 10 5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <div class="currency-menu" id="currencyMenu" role="listbox" aria-label="Выбор валюты">
+              <button class="currency-option is-active" type="button" role="option" aria-selected="true" data-currency="RUB" data-flag="flag-rub" data-coin="рубль знак.png">
+                <span class="currency-flag flag-rub" aria-hidden="true"></span>
+                <span>RUB</span>
+                <span class="currency-check" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="m5 12 4 4 10-10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+              </button>
+              <button class="currency-option" type="button" role="option" aria-selected="false" data-currency="USD" data-flag="flag-usd" data-coin="доллар знак.png">
+                <span class="currency-flag flag-usd" aria-hidden="true"></span>
+                <span>USD</span>
+                <span class="currency-check" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="m5 12 4 4 10-10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+              </button>
+              <button class="currency-option" type="button" role="option" aria-selected="false" data-currency="EUR" data-flag="flag-eur" data-coin="евро знак.png">
+                <span class="currency-flag flag-eur" aria-hidden="true"></span>
+                <span>EUR</span>
+                <span class="currency-check" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="m5 12 4 4 10-10" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="rtp-control" aria-label="RTP">
+            <button class="rtp-option rtp-mode" type="button" data-rtp="standard" aria-pressed="false">Обычный</button>
+            <button class="rtp-option rtp-value is-active" type="button" data-rtp="100" aria-pressed="true">100 RTP</button>
+          </div>
+
+          <button class="icon-btn profile-btn" type="button" aria-label="Профиль">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <span class="profile-login-text">Вход</span>
+          </button>
+        </header>
+
+        <section class="page is-active" id="page-home">
+          <div class="hero-banner">
+            <div class="hero-copy">
+              <img src="ЛОГО ВИНД hero.png" alt="Wind-Demo" />
+              <h1>Заливаешь iGaming?<br />Подключайся к <span>WIND Partners</span><br />и получай до <span>$80</span> CPA</h1>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+              <img class="hero-rocket" src="ракета.png" alt="" />
+            </div>
+            <button class="cta" type="button" data-page-link="partners">Подробнее</button>
+          </div>
+
+          <div class="section-head">
+            <div>
+              <div class="section-title">
+                <span class="flame section-icon-glow">
+                  <img class="section-icon-img" src="популярные игры.png" alt="" aria-hidden="true" />
+                </span>
+                <h2>Популярные игры</h2>
+              </div>
+            </div>
+          </div>
+
+          <div class="filters-row" id="providerFilters"></div>
+          <div class="game-grid" id="popularGrid"></div>
+
+          <div class="promo-slim">
+            <div>
+              <strong>Wind-Demo встроен в экосистему WIND Partners</strong>
+              <span>Тестируй демо-игры, снимай креативы и переходи к CPA-офферам без лишних шагов.</span>
+            </div>
+            <button class="cta" type="button" data-page-link="partners">Start Earning</button>
+          </div>
+
+          <div class="section-head">
+            <div class="section-title">
+              <span class="spark section-icon-glow">
+                <img class="section-icon-img" src="хайповые игры.png" alt="" aria-hidden="true" />
+              </span>
+              <div>
+                <h2>Хайповые игры</h2>
+                <p>Улучшенные версии для TikTok, Instagram и YouTube Shorts</p>
+              </div>
+            </div>
+            <button class="text-link" type="button" data-page-link="trending">Открыть раздел
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="trend-row" id="trendPreview"></div>
+
+          <div class="section-head" id="all-games">
+            <div class="section-title">
+              <span class="mini-icon section-icon-glow">
+                <img class="section-icon-img" src="все демо игры.png" alt="" aria-hidden="true" />
+              </span>
+              <h2>Все демо-игры</h2>
+            </div>
+            <button class="text-link" type="button" data-page-link="allgames">Смотреть все
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+          </div>
+          <div class="game-grid" id="gameGrid"></div>
+
+        </section>
+
+        <section class="page" id="page-allgames">
+          <button class="back-link" type="button" data-page-link="home">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span>Вернуться назад</span>
+          </button>
+
+          <div class="page-title">
+            <h1>Все демо-<span>игры</span></h1>
+            <p>Расширенная витрина демо-слотов для тестов, записи креативов и быстрого запуска без регистрации.</p>
+          </div>
+
+          <div class="section-head">
+            <div class="section-title">
+              <span class="mini-icon section-icon-glow">
+                <img class="section-icon-img" src="все демо игры.png" alt="" aria-hidden="true" />
+              </span>
+              <h2>Каталог демо-слотов</h2>
+            </div>
+          </div>
+
+          <div class="game-grid" id="allGamesGrid"></div>
+        </section>
+
+        <section class="page" id="page-partners">
+          <div class="partners-grid">
+            <div class="partner-panel">
+              <img class="partner-logo-mark" src="ЛОГО ВИНД hero.png" alt="WIND Partners" />
+              <h1>WIND Partners для тех, кто <span>льет iGaming</span> профессионально</h1>
+              <p>Партнерская программа интегрирована в Wind-Demo как часть продукта: можно тестировать игры, готовить креативы и быстро переходить к офферам без ощущения внешнего лендинга.</p>
+              <div class="partner-actions">
+                <a class="cta partner-link" href="https://www.wind-partners.com/apply?ref=DM5K5M">Join WIND Partners</a>
+                <a class="ghost-cta partner-link" href="https://www.wind-partners.com/apply?ref=DM5K5M">Become Partner</a>
+              </div>
+            </div>
+            <div class="info-panel">
+              <div class="info-line">
+                <span class="mini-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 19V5m0 14h16M8 15l3-3 3 2 5-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <div><strong>CPA</strong><span>Высокие ставки за каждого приведенного игрока.</span></div>
+              </div>
+              <div class="info-line">
+                <span class="mini-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <div><strong>Лучшая команда по CPA в СНГ</strong><span>Мы лучшая команда по CPA в СНГ пространстве.</span></div>
+              </div>
+              <div class="info-line">
+                <span class="mini-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 4 4 8v8l8 4 8-4V8l-8-4Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                    <path d="m4 8 8 4 8-4M12 12v8" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <div><strong>Hybrid</strong><span>Комбинированные условия для команд и стабильного объема.</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-head">
+            <div class="section-title"><h2>Почему именно WIND Partners</h2></div>
+          </div>
+          <div class="benefit-grid" id="benefitGrid"></div>
+
+          <div class="section-head">
+            <div class="section-title"><h2>Как начать сотрудничество</h2></div>
+          </div>
+          <div class="steps-grid">
+            <div class="step-card"><span class="step-number">1</span><strong>Оставь заявку</strong><span>Перейди по кнопке регистрации и отправь контакты команды.</span></div>
+            <div class="step-card"><span class="step-number">2</span><strong>Получай условия</strong><span>Менеджер подберет CPA или Hybrid под твой источник.</span></div>
+            <div class="step-card"><span class="step-number">3</span><strong>Запускай трафик</strong><span>Тестируй игры здесь, снимай креативы и масштабируй связки.</span></div>
+          </div>
+
+          <div class="section-head">
+            <div class="section-title"><h2>Отзывы партнеров</h2></div>
+          </div>
+          <div class="quotes-grid">
+            <div class="quote-panel"><p>“Wind-Demo удобно использовать как рабочую витрину для креативов. Все быстро, без лишнего шума.”</p><strong>Media buyer, Tier-2</strong></div>
+            <div class="quote-panel"><p>“CPA условия прозрачные, менеджер отвечает быстро. Для тестов по слотам такой формат очень зашел.”</p><strong>Affiliate team lead</strong></div>
+            <div class="quote-panel"><p>“Нравится, что партнерка ощущается частью продукта, а не отдельным баннером поверх интерфейса.”</p><strong>Solo trafficker</strong></div>
+          </div>
+        </section>
+
+        <section class="page" id="page-trending">
+          <div class="page-title">
+            <h1>Хайповые игры для <span>креативов</span></h1>
+            <p>Игры, которые сейчас вирусятся в TikTok, Instagram и YouTube Shorts. Эти версии подготовлены под запись роликов, быстрый старт и понятный визуальный темп.</p>
+          </div>
+
+          <div class="trend-platforms">
+            <span>TikTok</span>
+            <span>Instagram</span>
+            <span>YouTube Shorts</span>
+          </div>
+
+          <div class="trending-grid" id="trendingGrid"></div>
+
+          <div class="promo-slim">
+            <div>
+              <strong>Нужны офферы под такие креативы?</strong>
+              <span>WIND Partners поможет запустить трафик на iGaming CPA и быстро проверить гипотезы.</span>
+            </div>
+            <a class="cta partner-link" href="https://www.wind-partners.com/apply?ref=DM5K5M">Start Earning</a>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="access-card auth-card">
+        <div class="access-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4 21a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <h2 id="authTitle">Вход и регистрация</h2>
+        <p id="authText">Введите любую почту и пароль от 6 символов. Аккаунт сохранится на этом устройстве.</p>
+        <form class="access-form" id="authForm">
+          <input class="access-input" id="authEmail" type="email" autocomplete="email" placeholder="Почта" />
+          <input class="access-input" id="authPassword" type="password" autocomplete="current-password" placeholder="Пароль от 6 символов" />
+          <div class="access-error" id="authError" aria-live="polite"></div>
+          <div class="access-actions">
+            <button class="access-submit" id="authSubmit" type="submit">Войти</button>
+            <button class="access-cancel" id="authCancel" type="button">Назад</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="accessModal" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
+      <div class="access-card">
+        <div class="access-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+            <path d="M17 10V8a5 5 0 0 0-10 0v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M6 10h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            <path d="M12 14v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <h2 id="accessTitle">Доступ к хайповым играм</h2>
+        <p id="accessText">Этот раздел закрыт для обычного просмотра. Станьте партнером Wind Partners и получите личный пароль. После введите его, чтобы открыть улучшенные версии игр для креативов.</p>
+        <form class="access-form" id="accessForm">
+          <input class="access-input" id="accessPassword" type="password" autocomplete="current-password" placeholder="Введите пароль" />
+          <div class="access-error" id="accessError" aria-live="polite"></div>
+          <div class="access-actions">
+            <button class="access-submit" id="accessSubmit" type="submit">Открыть раздел</button>
+            <button class="access-cancel" id="accessCancel" type="button">Назад</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal" id="gameModal" role="dialog" aria-modal="true" aria-label="Demo game overlay">
+      <div class="modal-panel">
+        <div class="modal-toolbar">
+          <div class="modal-title">
+            <strong id="modalTitle">Demo Game</strong>
+            <span id="modalMeta">RUB 100 000</span>
+          </div>
+          <div class="modal-actions">
+            <button class="icon-btn" id="closeModal" type="button" aria-label="Закрыть">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </button>
+            <button class="icon-btn" id="fullscreenBtn" type="button" aria-label="Полный экран">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <button class="ghost-cta" id="reloadBtn" type="button">Баланс</button>
+            <button class="ghost-cta" id="currencyBtn" type="button">Валюта</button>
+            <a class="cta partner-link" href="https://www.wind-partners.com/apply?ref=DM5K5M">WIND Partners</a>
+          </div>
+        </div>
+        <div class="game-stage">
+          <div class="fake-iframe" id="fakeIframe">
+            <div class="loader">
+              <div class="spinner" aria-hidden="true"></div>
+              <span id="loaderTitle">Запускаем демо-игру</span>
+              <span id="loaderMeta">Provider mock session</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const partnerUrl = "https://www.wind-partners.com/apply?ref=DM5K5M";
+      const state = {
+        page: "home",
+        provider: "all",
+        search: "",
+        currency: "RUB",
+        rtpMode: "100",
+        lang: "ru",
+        hub88User: "",
+        authUser: null,
+        trendingUnlocked: false
+      };
+
+      const trendingAccessKey = "windDemoTrendingAccess";
+      const trendingPassword = "VOZDUHAN";
+      const authStorageKey = "windDemoAuthUser";
+
+      let providers = ["Pragmatic", "PG Soft", "Hacksaw", "Spribe", "Nolimit", "PlaynGO"];
+
+      const copy = {
+        ru: {
+          sidePromo: "ру-баннер (2).png",
+          providerAll: "Все",
+          playDemo: "Играть демо",
+          favorite: "В избранное",
+          demoProvider: "Демо-провайдер",
+          demoSession: "демо-сессия",
+          modalStarting: "Запускаем демо-игру",
+          modalReady: "готова",
+          balanceUpdating: "Обновляем демо-баланс",
+          balanceApplied: "Баланс применен",
+          currencyLabel: "Валюта",
+          trendSuffix: "Оптимизировано для записи креативов и быстрых демо-сцен.",
+          placeholder: "Поиск игры или провайдера",
+          accessTitle: "Доступ к хайповым играм",
+          accessText: "Этот раздел закрыт для обычного просмотра. Станьте партнером Wind Partners и получите личный пароль. После введите его, чтобы открыть улучшенные версии игр для креативов.",
+          accessPlaceholder: "Введите пароль",
+          accessSubmit: "Открыть раздел",
+          accessCancel: "Назад",
+          accessError: "Неверный пароль. Проверьте раскладку и попробуйте еще раз.",
+          authTitle: "Вход и регистрация",
+          authText: "Введите любую почту и пароль от 6 символов. Аккаунт сохранится на этом устройстве.",
+          authEmailPlaceholder: "Почта",
+          authPasswordPlaceholder: "Пароль от 6 символов",
+          authSubmit: "Войти",
+          authCancel: "Назад",
+          authError: "Введите почту и пароль минимум из 6 символов.",
+          authLogin: "Вход",
+          authProfile: "Профиль",
+          textNodes: [
+            ["#page-home [data-page-link='allgames']", "Смотреть все"],
+            ["#page-home [data-page-link='trending']", "Открыть раздел"]
+          ],
+          text: [
+            [".nav-item[data-page='home'] .nav-title", "Главная"],
+            [".nav-item[data-page='home'] .nav-tip", "Поиск, провайдеры, категории и запуск демо-игр."],
+            [".nav-item[data-page='partners'] .nav-tip", "CPA, Hybrid, выплаты и быстрый старт."],
+            [".nav-item[data-page='trending'] .nav-title", "Хайповые игры"],
+            [".nav-item[data-page='trending'] .nav-tag", "NEW"],
+            [".nav-item[data-page='trending'] .nav-tip", "Версии для TikTok, Instagram и Shorts-креативов."],
+            [".support-control .control-label", "Поддержка"],
+            [".copyright", "© 2026 Wind Partners. Все права защищены."],
+            [".rtp-mode", "Обычный"],
+            [".hero-banner > .cta", "Подробнее"],
+            ["#page-home .promo-slim strong", "Wind-Demo встроен в экосистему WIND Partners"],
+            ["#page-home .promo-slim span", "Тестируй демо-игры, снимай креативы и переходи к CPA-офферам без лишних шагов."],
+            ["#page-home .promo-slim .cta", "Начать зарабатывать"],
+            ["#page-partners .partner-panel p", "Партнерская программа интегрирована в Wind-Demo как часть продукта: можно тестировать игры, готовить креативы и быстро переходить к офферам без ощущения внешнего лендинга."],
+            ["#page-partners .partner-actions .cta", "Присоединиться к WIND Partners"],
+            ["#page-partners .partner-actions .ghost-cta", "Стать партнером"],
+            ["#page-trending .page-title p", "Игры, которые сейчас вирусятся в TikTok, Instagram и YouTube Shorts. Эти версии подготовлены под запись роликов, быстрый старт и понятный визуальный темп."],
+            ["#page-trending .promo-slim strong", "Нужны офферы под такие креативы?"],
+            ["#page-trending .promo-slim span", "WIND Partners поможет запустить трафик на iGaming CPA и быстро проверить гипотезы."],
+            ["#page-trending .promo-slim .cta", "Начать зарабатывать"],
+            ["#page-allgames .back-link span", "Вернуться назад"],
+            ["#page-allgames .page-title p", "Расширенная витрина демо-слотов для тестов, записи креативов и быстрого запуска без регистрации."],
+            ["#reloadBtn", "Баланс"],
+            ["#currencyBtn", "Валюта"],
+            ["#loaderTitle", "Запускаем демо-игру"]
+          ],
+          html: [
+            [".hero-copy h1", "Заливаешь iGaming?<br />Подключайся к <span>WIND Partners</span><br />и получай до <span>$80</span> CPA"],
+            ["#page-partners .partner-panel h1", "WIND Partners для тех, кто <span>льет iGaming</span> профессионально"],
+            ["#page-trending .page-title h1", "Хайповые игры для <span>креативов</span>"],
+            ["#page-allgames .page-title h1", "Все демо-<span>игры</span>"]
+          ],
+          indexedText: [
+            ["#page-home .section-title h2", ["Популярные игры", "Хайповые игры", "Все демо-игры"]],
+            ["#page-allgames .section-title h2", ["Каталог демо-слотов"]],
+            ["#page-home .section-title p", ["Улучшенные версии для TikTok, Instagram и YouTube Shorts"]],
+            ["#page-partners .info-line div strong", ["CPA", "Лучшая команда по CPA в СНГ", "Hybrid"]],
+            ["#page-partners .info-line div span", ["Высокие ставки за каждого приведенного игрока.", "Мы лучшая команда по CPA в СНГ пространстве.", "Комбинированные условия для команд и стабильного объема."]],
+            ["#page-partners .section-title h2", ["Почему именно WIND Partners", "Как начать сотрудничество", "Отзывы партнеров"]],
+            ["#page-partners .step-card strong", ["Оставь заявку", "Получай условия", "Запускай трафик"]],
+            ["#page-partners .step-card span:not(.step-number)", ["Перейди по кнопке регистрации и отправь контакты команды.", "Менеджер подберет CPA или Hybrid под твой источник.", "Тестируй игры здесь, снимай креативы и масштабируй связки."]],
+            ["#page-partners .quote-panel p", ["\"Wind-Demo удобно использовать как рабочую витрину для креативов. Все быстро, без лишнего шума.\"", "\"CPA условия прозрачные, менеджер отвечает быстро. Для тестов по слотам такой формат очень зашел.\"", "\"Нравится, что партнерка ощущается частью продукта, а не отдельным баннером поверх интерфейса.\""]]
+          ],
+          attrs: [
+            ["#collapseBtn", "aria-label", "Свернуть меню"],
+            ["#desktopMenuBtn", "aria-label", "Свернуть меню"],
+            ["#mobileMenuBtn", "aria-label", "Открыть меню"],
+            ["#balanceInput", "aria-label", "Демо-баланс"],
+            ["#currencyToggle", "aria-label", "Валюта"],
+            ["#currencyMenu", "aria-label", "Выбор валюты"],
+            [".profile-btn", "aria-label", "Профиль"],
+            ["#closeModal", "aria-label", "Закрыть"],
+            ["#fullscreenBtn", "aria-label", "Полный экран"],
+            [".language-switch", "aria-label", "Выбор языка"]
+          ],
+          trends: [
+            ["Aviator+", "Улучшенная версия", "AV"],
+            ["JetX+", "Теперь быстрее", "JX"],
+            ["Chicken Road", "Больше бонусов", "CR"],
+            ["Mines Pro", "Умные мины", "MP"],
+            ["Crash Turbo", "Мгновенный кэшбэк", "CT"],
+            ["Tower+", "Улучшенные множители", "T+"],
+            ["Plinko X", "Бонусные шарики", "PX"],
+            ["Rocket Run", "Специальная версия Wind", "RR"]
+          ],
+          benefits: [
+            ["CPA", "До $80 за приведенного игрока и понятная модель оплаты."],
+            ["Лучшая команда по CPA в СНГ", "Мы лучшая команда по CPA в СНГ пространстве."],
+            ["Hybrid", "Комбинация фиксированной выплаты и доли для сильных источников."],
+            ["Высокие ставки", "Индивидуальные условия для команд и стабильного объема."],
+            ["Быстрые выплаты", "Прозрачные расчеты и быстрый контакт с менеджером."],
+            ["Поддержка", "Помощь с офферами, креативами и первыми тестами."]
+          ]
+        },
+        en: {
+          sidePromo: "англ-баннер.png",
+          providerAll: "All",
+          playDemo: "Play Demo",
+          favorite: "Favorite",
+          demoProvider: "Demo provider",
+          demoSession: "demo session",
+          modalStarting: "Launching demo game",
+          modalReady: "is ready",
+          balanceUpdating: "Updating demo balance",
+          balanceApplied: "Balance applied",
+          currencyLabel: "Currency",
+          trendSuffix: "Optimized for recording creatives and fast demo scenes.",
+          placeholder: "Search game or provider",
+          accessTitle: "Trending games access",
+          accessText: "This section is private. Enter the password to open enhanced game versions for creatives.",
+          accessPlaceholder: "Enter password",
+          accessSubmit: "Open section",
+          accessCancel: "Back",
+          accessError: "Wrong password. Check the layout and try again.",
+          authTitle: "Login and registration",
+          authText: "Enter any email and a password of at least 6 characters. The account will be saved on this device.",
+          authEmailPlaceholder: "Email",
+          authPasswordPlaceholder: "Password, 6+ chars",
+          authSubmit: "Log in",
+          authCancel: "Back",
+          authError: "Enter an email and a password with at least 6 characters.",
+          authLogin: "Login",
+          authProfile: "Profile",
+          textNodes: [
+            ["#page-home [data-page-link='allgames']", "View all"],
+            ["#page-home [data-page-link='trending']", "Open section"]
+          ],
+          text: [
+            [".nav-item[data-page='home'] .nav-title", "Home"],
+            [".nav-item[data-page='home'] .nav-tip", "Search, providers, categories and demo launches."],
+            [".nav-item[data-page='partners'] .nav-tip", "CPA, Hybrid, payouts and fast start."],
+            [".nav-item[data-page='trending'] .nav-title", "Trending Games"],
+            [".nav-item[data-page='trending'] .nav-tag", "NEW"],
+            [".nav-item[data-page='trending'] .nav-tip", "Versions for TikTok, Instagram and Shorts creatives."],
+            [".support-control .control-label", "Support"],
+            [".copyright", "© 2026 Wind Partners. All rights reserved."],
+            [".rtp-mode", "Standard"],
+            [".hero-banner > .cta", "Details"],
+            ["#page-home .promo-slim strong", "Wind-Demo is built into the WIND Partners ecosystem"],
+            ["#page-home .promo-slim span", "Test demo games, record creatives and move to CPA offers without extra steps."],
+            ["#page-home .promo-slim .cta", "Start Earning"],
+            ["#page-partners .partner-panel p", "The affiliate program is integrated into Wind-Demo as part of the product: test games, prepare creatives and move to offers quickly without feeling like you left the app."],
+            ["#page-partners .partner-actions .cta", "Join WIND Partners"],
+            ["#page-partners .partner-actions .ghost-cta", "Become Partner"],
+            ["#page-trending .page-title p", "Games that are going viral on TikTok, Instagram and YouTube Shorts. These versions are prepared for recording videos, fast starts and clear visual tempo."],
+            ["#page-trending .promo-slim strong", "Need offers for these creatives?"],
+            ["#page-trending .promo-slim span", "WIND Partners helps launch iGaming CPA traffic and quickly validate hypotheses."],
+            ["#page-trending .promo-slim .cta", "Start Earning"],
+            ["#page-allgames .back-link span", "Back to home"],
+            ["#page-allgames .page-title p", "An expanded demo-slot showcase for testing, recording creatives and launching fast without registration."],
+            ["#reloadBtn", "Balance"],
+            ["#currencyBtn", "Currency"],
+            ["#loaderTitle", "Launching demo game"]
+          ],
+          html: [
+            [".hero-copy h1", "Fueling iGaming?<br />Join <span>WIND Partners</span><br />and earn up to <span>$80</span> CPA"],
+            ["#page-partners .partner-panel h1", "WIND Partners for teams that <span>run iGaming traffic</span> professionally"],
+            ["#page-trending .page-title h1", "Trending games for <span>creatives</span>"],
+            ["#page-allgames .page-title h1", "All demo <span>games</span>"]
+          ],
+          indexedText: [
+            ["#page-home .section-title h2", ["Popular Games", "Trending Games", "All Demo Games"]],
+            ["#page-allgames .section-title h2", ["Demo Slot Catalog"]],
+            ["#page-home .section-title p", ["Enhanced versions for TikTok, Instagram and YouTube Shorts"]],
+            ["#page-partners .info-line div strong", ["CPA", "Best CPA Team", "Hybrid"]],
+            ["#page-partners .info-line div span", ["High payouts for every referred player.", "We are the best CPA team in the CIS market.", "Combined terms for teams and stable volume."]],
+            ["#page-partners .section-title h2", ["Why WIND Partners", "How to start cooperation", "Partner reviews"]],
+            ["#page-partners .step-card strong", ["Submit an application", "Get your terms", "Launch traffic"]],
+            ["#page-partners .step-card span:not(.step-number)", ["Open the registration link and send your team contacts.", "A manager will match CPA or Hybrid terms to your source.", "Test games here, record creatives and scale your bundles."]],
+            ["#page-partners .quote-panel p", ["\"Wind-Demo works well as a creative showcase. Everything is fast and clean.\"", "\"CPA terms are transparent and the manager replies quickly. This format is great for slot tests.\"", "\"I like that the affiliate program feels like part of the product, not a separate banner on top of the interface.\""]]
+          ],
+          attrs: [
+            ["#collapseBtn", "aria-label", "Collapse menu"],
+            ["#desktopMenuBtn", "aria-label", "Collapse menu"],
+            ["#mobileMenuBtn", "aria-label", "Open menu"],
+            ["#balanceInput", "aria-label", "Demo balance"],
+            ["#currencyToggle", "aria-label", "Currency"],
+            ["#currencyMenu", "aria-label", "Currency selection"],
+            [".profile-btn", "aria-label", "Profile"],
+            ["#closeModal", "aria-label", "Close"],
+            ["#fullscreenBtn", "aria-label", "Fullscreen"],
+            [".language-switch", "aria-label", "Language selection"]
+          ],
+          trends: [
+            ["Aviator+", "Enhanced version", "AV"],
+            ["JetX+", "Faster now", "JX"],
+            ["Chicken Road", "More bonuses", "CR"],
+            ["Mines Pro", "Smart mines", "MP"],
+            ["Crash Turbo", "Instant cashback", "CT"],
+            ["Tower+", "Enhanced multipliers", "T+"],
+            ["Plinko X", "Bonus balls", "PX"],
+            ["Rocket Run", "Special Wind version", "RR"]
+          ],
+          benefits: [
+            ["CPA", "Up to $80 for a referred player with a clear payout model."],
+            ["Best CPA Team", "We are the best CPA team in the CIS market."],
+            ["Hybrid", "Flexible CPA-focused terms for strong traffic sources."],
+            ["High rates", "Individual terms for teams and stable volume."],
+            ["Fast payouts", "Transparent calculations and fast manager contact."],
+            ["Support", "Help with offers, creatives and first tests."]
+          ]
+        }
+      };
+
+      function t() {
+        return copy[state.lang] || copy.ru;
+      }
+
+      const gameBannerMap = new Map([
+        ["sweet bonanza", "свитбананза.webp"],
+        ["gates olympus", "гатесофолимпус.webp"],
+        ["gates of olympus", "гатесофолимпус.webp"],
+        ["wanted wild", "wantedwild.webp"],
+        ["sugar rush", "шугар раш.webp"],
+        ["big bass", "биг басс.webp"],
+        ["big bass bonanza", "биг басс.webp"],
+        ["the dog house", "догхаус.webp"],
+        ["le bandit", "лебандит.webp"],
+        ["zeus hades", "zeusvshades.webp"],
+        ["fruit party", "fruitparty.webp"],
+        ["starlight princess", "starlight.webp"]
+      ]);
+
+      function normalizedGameKey(value) {
+        return String(value || "")
+          .toLowerCase()
+          .replace(/[™®]/g, "")
+          .replace(/\+/g, "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .replace(/\s+(turbo|bonus|max)$/i, "");
+      }
+
+      function localBannerFor(name) {
+        return gameBannerMap.get(normalizedGameKey(name)) || "";
+      }
+
+      let games = [
+        ["Sweet Bonanza", "Pragmatic", "SB", "#9b4dff", "#35215c", "rgba(255, 80, 210, 0.42)"],
+        ["Gates Olympus", "Pragmatic", "GO", "#7657ff", "#281a4c", "rgba(118, 87, 255, 0.45)"],
+        ["Wanted Wild", "Hacksaw", "WW", "#7e4dff", "#2c1b3f", "rgba(155, 77, 255, 0.38)"],
+        ["Sugar Rush", "Pragmatic", "SR", "#b14cff", "#28164b", "rgba(200, 80, 255, 0.36)"],
+        ["Big Bass", "PlaynGO", "BB", "#5d5cff", "#181f46", "rgba(38, 215, 255, 0.22)"],
+        ["The Dog House", "Pragmatic", "DH", "#8a4dff", "#261d36", "rgba(155, 77, 255, 0.34)"],
+        ["Le Bandit", "Hacksaw", "LB", "#6b46ff", "#161b36", "rgba(90, 110, 255, 0.32)"],
+        ["Zeus Hades", "Nolimit", "ZH", "#9f49ff", "#1d1838", "rgba(160, 75, 255, 0.38)"],
+        ["Fruit Party", "Pragmatic", "FP", "#7b45e8", "#1e2238", "rgba(38, 215, 255, 0.18)"],
+        ["Starlight Princess", "PG Soft", "SP", "#b04dff", "#27183e", "rgba(240, 75, 255, 0.32)"],
+        ["Aviator Demo", "Spribe", "AV", "#685cff", "#161a35", "rgba(38, 215, 255, 0.22)"],
+        ["Mines Pro", "Spribe", "MP", "#944eff", "#1b1932", "rgba(155, 77, 255, 0.34)"],
+        ["Plinko X", "Spribe", "PX", "#a650ff", "#211638", "rgba(240, 75, 255, 0.28)"],
+        ["Tower+", "PG Soft", "T+", "#755cff", "#181a34", "rgba(38, 215, 255, 0.2)"],
+        ["Crash Turbo", "Nolimit", "CT", "#9c4bff", "#1d183a", "rgba(155, 77, 255, 0.36)"]
+      ].map(([name, provider, symbol, a, b, glow], index) => ({
+        id: `game-${index}`,
+        name,
+        provider,
+        symbol,
+        a,
+        b,
+        c: "#ffffff22",
+        glow,
+        banner: localBannerFor(name),
+        popular: index < 10
+      }));
+
+      let allDemoGames = Array.from({ length: 4 }, (_, round) =>
+        games.map((game, index) => ({
+          ...game,
+          id: `demo-${round}-${index}`,
+          name: round === 0 ? game.name : `${game.name} ${["Turbo", "Bonus", "Max"][round - 1]}`,
+          popular: false
+        }))
+      ).flat();
+
+      const trendGames = [
+        ["Aviator+", "Улучшенная версия", "AV"],
+        ["JetX+", "Теперь быстрее", "JX"],
+        ["Chicken Road", "Больше бонусов", "CR"],
+        ["Mines Pro", "Умные мины", "MP"],
+        ["Crash Turbo", "Мгновенный кэшбэк", "CT"],
+        ["Tower+", "Улучшенные множители", "T+"],
+        ["Plinko X", "Бонусные шарики", "PX"],
+        ["Rocket Run", "Специальная версия Wind", "RR"]
+      ].map(([name, caption, symbol]) => ({ name, caption, symbol }));
+
+      const benefits = [
+        ["CPA", "До $80 за приведенного игрока и понятная модель оплаты."],
+        ["Лучшая команда по CPA в СНГ", "Мы лучшая команда по CPA в СНГ пространстве."],
+        ["Hybrid", "Гибкие CPA-условия для сильных источников трафика."],
+        ["Высокие ставки", "Индивидуальные условия для команд и стабильного объема."],
+        ["Быстрые выплаты", "Прозрачные расчеты и быстрый контакт с менеджером."],
+        ["Поддержка", "Помощь с офферами, креативами и первыми тестами."]
+      ];
+
+      const appShell = document.querySelector("#appShell");
+      const searchInput = document.querySelector("#searchInput");
+      const balanceInput = document.querySelector("#balanceInput");
+      const balanceCoin = document.querySelector("#balanceCoin");
+      const currencyControl = document.querySelector("#currencyControl");
+      const currencyToggle = document.querySelector("#currencyToggle");
+      const currencyFlag = document.querySelector("#currencyFlag");
+      const currencyCode = document.querySelector("#currencyCode");
+      const currencyOptions = document.querySelectorAll("[data-currency]");
+      const rtpOptions = document.querySelectorAll("[data-rtp]");
+      const langButtons = document.querySelectorAll("[data-lang]");
+      const profileButton = document.querySelector(".profile-btn");
+      const profileLoginText = document.querySelector(".profile-login-text");
+      const authModal = document.querySelector("#authModal");
+      const authForm = document.querySelector("#authForm");
+      const authEmail = document.querySelector("#authEmail");
+      const authPassword = document.querySelector("#authPassword");
+      const authError = document.querySelector("#authError");
+      const sidePromoImage = document.querySelector("#sidePromoImage");
+      const providerFilters = document.querySelector("#providerFilters");
+      const popularGrid = document.querySelector("#popularGrid");
+      const gameGrid = document.querySelector("#gameGrid");
+      const allGamesGrid = document.querySelector("#allGamesGrid");
+      const trendPreview = document.querySelector("#trendPreview");
+      const trendingGrid = document.querySelector("#trendingGrid");
+      const benefitGrid = document.querySelector("#benefitGrid");
+      const accessModal = document.querySelector("#accessModal");
+      const accessForm = document.querySelector("#accessForm");
+      const accessPassword = document.querySelector("#accessPassword");
+      const accessError = document.querySelector("#accessError");
+      const modal = document.querySelector("#gameModal");
+      const modalTitle = document.querySelector("#modalTitle");
+      const modalMeta = document.querySelector("#modalMeta");
+      const fakeIframe = document.querySelector("#fakeIframe");
+      const loaderTitle = document.querySelector("#loaderTitle");
+      const loaderMeta = document.querySelector("#loaderMeta");
+
+      function iconSymbol(symbol) {
+        return symbol.length > 2 ? symbol.slice(0, 2) : symbol;
+      }
+
+      function selectedPlatform() {
+        return window.matchMedia("(max-width: 760px)").matches ? "GPL_MOBILE" : "GPL_DESKTOP";
+      }
+
+      function selectedCountry() {
+        return state.lang === "en" ? "US" : "RU";
+      }
+
+      function normalizeApiGame(game, index) {
+        return {
+          ...game,
+          id: game.id || game.game_code || `hub88-${index}`,
+          name: game.name || game.game_code || `Hub88 Game ${index + 1}`,
+          provider: game.provider || game.product || "Hub88",
+          symbol: game.symbol || iconSymbol(game.name || "HD"),
+          a: game.a || ["#9b4dff", "#7657ff", "#7e4dff", "#b14cff", "#5d5cff"][index % 5],
+          b: game.b || ["#35215c", "#281a4c", "#2c1b3f", "#28164b", "#181f46"][index % 5],
+          c: game.c || "#ffffff22",
+          glow: game.glow || "rgba(155, 77, 255, 0.34)",
+          banner: game.banner || localBannerFor(game.name || game.game_code),
+          popular: index < 10
+        };
+      }
+
+      async function loadHub88Catalog() {
+        try {
+          const params = new URLSearchParams({
+            lang: state.lang,
+            country: selectedCountry(),
+            platform: selectedPlatform()
+          });
+          const response = await fetch(`/api/hub88/catalog?${params.toString()}`);
+          if (!response.ok) return;
+          const data = await response.json();
+          if (!Array.isArray(data.games) || !data.games.length) return;
+
+          games = data.games.map(normalizeApiGame);
+          allDemoGames = games.map((game) => ({ ...game, popular: false }));
+          if (Array.isArray(data.providers) && data.providers.length) {
+            providers = data.providers.map((provider) => provider.name || provider.code).filter(Boolean);
+          } else {
+            providers = [...new Set(games.map((game) => game.provider))];
+          }
+          if (state.provider !== "all" && !providers.includes(state.provider)) {
+            state.provider = "all";
+          }
+          renderProviderFilters();
+          renderGames();
+        } catch {
+          /* Keep the existing mock catalog when the backend is not running. */
+        }
+      }
+
+      function renderProviderFilters() {
+        const chips = [{ key: "all", label: t().providerAll }, ...providers.map((provider) => ({ key: provider, label: provider }))];
+        providerFilters.replaceChildren(
+          ...chips.map((chip) => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = `chip${state.provider === chip.key ? " is-active" : ""}`;
+            button.textContent = chip.label;
+            button.addEventListener("click", () => {
+              state.provider = chip.key;
+              renderProviderFilters();
+              renderGames();
+            });
+            return button;
+          })
+        );
+      }
+
+      function gameCard(game) {
+        const labels = t();
+        const card = document.createElement("article");
+        card.className = "game-card";
+        card.dataset.game = game.name;
+        if (game.game_code) card.dataset.gameCode = game.game_code;
+        card.style.setProperty("--game-a", game.a);
+        card.style.setProperty("--game-b", game.b);
+        card.style.setProperty("--game-c", game.c);
+        card.style.setProperty("--game-glow", game.glow);
+        const gameVisual = game.banner || game.url_thumb || game.url_background || game.thumbnails?.[0] || game.backgrounds?.[0] || localBannerFor(game.name) || "";
+        if (gameVisual) card.classList.add("has-banner");
+        const providerLine = game.provider || labels.demoProvider;
+        const visualHtml = gameVisual
+          ? `<img src="${escapeHtml(gameVisual)}" alt="${escapeHtml(game.name)}" loading="lazy" />`
+          : `<div class="game-art-placeholder" data-symbol="${escapeHtml(iconSymbol(game.symbol))}"></div>`;
+        card.innerHTML = `
+          <div class="game-art">
+            ${visualHtml}
+            ${game.popular ? `<span class="game-top-badge">TOP</span>` : ""}
+          </div>
+          <div class="game-footer">
+            <div class="game-provider">${escapeHtml(providerLine)}</div>
+            <div class="game-name">${escapeHtml(game.name)}</div>
+          </div>
+          <div class="game-actions">
+            <button class="play-btn" type="button" aria-label="${escapeHtml(`${labels.playDemo} ${game.name}`)}">${labels.playDemo}</button>
+            <button class="favorite-btn" type="button" aria-label="${escapeHtml(`${labels.favorite} ${game.name}`)}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 21s-7-4.4-9.4-8A5.6 5.6 0 0 1 12 6.2 5.6 5.6 0 0 1 21.4 13C19 16.6 12 21 12 21Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        `;
+        card.querySelector(".play-btn").addEventListener("click", () => openGame(game));
+        card.addEventListener("dblclick", () => openGame(game));
+        return card;
+      }
+
+      function fillGameGridPlaceholders(grid) {
+        if (!grid) return;
+        grid.querySelectorAll(".game-card-spacer").forEach((spacer) => spacer.remove());
+        const cards = [...grid.querySelectorAll(".game-card")];
+        if (!cards.length) return;
+
+        const gap = Number.parseFloat(getComputedStyle(grid).columnGap) || 0;
+        const cardWidth = cards[0].getBoundingClientRect().width;
+        const gridWidth = grid.getBoundingClientRect().width;
+        if (!cardWidth || !gridWidth) return;
+
+        const columns = Math.max(1, Math.floor((gridWidth + gap) / (cardWidth + gap)));
+        const missing = (columns - (cards.length % columns)) % columns;
+        for (let index = 0; index < missing; index += 1) {
+          const spacer = document.createElement("div");
+          spacer.className = "game-card-spacer";
+          spacer.setAttribute("aria-hidden", "true");
+          grid.append(spacer);
+        }
+      }
+
+      function fillAllGameGridPlaceholders() {
+        [popularGrid, gameGrid, allGamesGrid].forEach(fillGameGridPlaceholders);
+      }
+
+      function renderGames() {
+        const query = state.search.toLowerCase();
+        const filtered = games.filter((game) => {
+          const matchesSearch = `${game.name} ${game.provider}`.toLowerCase().includes(query);
+          const matchesProvider = state.provider === "all" || game.provider === state.provider;
+          return matchesSearch && matchesProvider;
+        });
+        popularGrid.replaceChildren(...filtered.filter((game) => game.popular).slice(0, 10).map(gameCard));
+        gameGrid.replaceChildren(...filtered.map(gameCard));
+        if (allGamesGrid) {
+          const allFiltered = allDemoGames.filter((game) => {
+            const matchesSearch = `${game.name} ${game.provider}`.toLowerCase().includes(query);
+            const matchesProvider = state.provider === "all" || game.provider === state.provider;
+            return matchesSearch && matchesProvider;
+          });
+          allGamesGrid.replaceChildren(...allFiltered.map(gameCard));
+        }
+        requestAnimationFrame(fillAllGameGridPlaceholders);
+      }
+
+      function trendSmallCard(game) {
+        const card = document.createElement("article");
+        card.className = "trend-card";
+        card.innerHTML = `
+          <div class="trend-icon">${game.symbol}</div>
+          <strong>${game.name}</strong>
+          <span>${game.caption}</span>
+        `;
+        return card;
+      }
+
+      function trendLargeCard(game) {
+        const labels = t();
+        const card = document.createElement("article");
+        card.className = "trend-large";
+        card.dataset.game = game.name;
+        card.innerHTML = `
+          <div class="trend-icon">${game.symbol}</div>
+          <strong>${game.name}</strong>
+          <span>${game.caption}. ${labels.trendSuffix}</span>
+          <button class="play-btn" type="button" aria-label="${labels.playDemo} ${game.name}">${labels.playDemo}</button>
+        `;
+        card.querySelector(".play-btn").addEventListener("click", () =>
+          openGame({
+            name: game.name,
+            provider: "Wind Special",
+            symbol: game.symbol
+          })
+        );
+        return card;
+      }
+
+      function renderTrending() {
+        const trendGames = t().trends.map(([name, caption, symbol]) => ({ name, caption, symbol }));
+        trendPreview.replaceChildren(...trendGames.slice(0, 7).map(trendSmallCard));
+        trendingGrid.replaceChildren(...trendGames.map(trendLargeCard));
+      }
+
+      function renderBenefits() {
+        benefitGrid.replaceChildren(
+          ...t().benefits.map(([title, copy]) => {
+            const card = document.createElement("article");
+            card.className = "benefit-card";
+            card.innerHTML = `
+              <span class="mini-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <strong>${title}</strong>
+              <span>${copy}</span>
+            `;
+            return card;
+          })
+        );
+      }
+
+      function loadAuthUser() {
+        try {
+          const saved = localStorage.getItem(authStorageKey);
+          state.authUser = saved ? JSON.parse(saved) : null;
+        } catch {
+          state.authUser = null;
+        }
+      }
+
+      function saveAuthUser(user) {
+        state.authUser = user;
+        try {
+          localStorage.setItem(authStorageKey, JSON.stringify(user));
+        } catch {
+          /* The current page session still stays logged in if storage is unavailable. */
+        }
+        updateProfileButton();
+      }
+
+      function syncAuthCopy() {
+        const labels = t();
+        document.querySelector("#authTitle").textContent = labels.authTitle;
+        document.querySelector("#authText").textContent = labels.authText;
+        authEmail.placeholder = labels.authEmailPlaceholder;
+        authPassword.placeholder = labels.authPasswordPlaceholder;
+        document.querySelector("#authSubmit").textContent = labels.authSubmit;
+        document.querySelector("#authCancel").textContent = labels.authCancel;
+        profileLoginText.textContent = labels.authLogin;
+      }
+
+      function updateProfileButton() {
+        const labels = t();
+        const isLoggedIn = Boolean(state.authUser);
+        profileButton.classList.toggle("is-login", !isLoggedIn);
+        profileButton.setAttribute("aria-label", isLoggedIn ? labels.authProfile : labels.authLogin);
+        profileButton.title = isLoggedIn ? state.authUser.email : labels.authLogin;
+      }
+
+      function openAuthModal() {
+        syncAuthCopy();
+        authEmail.value = "";
+        authPassword.value = "";
+        authError.textContent = "";
+        authModal.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+        window.setTimeout(() => authEmail.focus(), 60);
+      }
+
+      function closeAuthModal() {
+        authModal.classList.remove("is-open");
+        if (!accessModal.classList.contains("is-open") && !modal.classList.contains("is-open")) {
+          document.body.style.overflow = "";
+        }
+      }
+
+      function hasTrendingAccess() {
+        return state.page === "trending" && state.trendingUnlocked;
+      }
+
+      function rememberTrendingAccess() {
+        state.trendingUnlocked = true;
+      }
+
+      function syncAccessCopy() {
+        const labels = t();
+        document.querySelector("#accessTitle").textContent = labels.accessTitle;
+        document.querySelector("#accessText").textContent = labels.accessText;
+        accessPassword.placeholder = labels.accessPlaceholder;
+        document.querySelector("#accessSubmit").textContent = labels.accessSubmit;
+        document.querySelector("#accessCancel").textContent = labels.accessCancel;
+      }
+
+      function openAccessPrompt() {
+        syncAccessCopy();
+        accessPassword.value = "";
+        accessError.textContent = "";
+        accessModal.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+        window.setTimeout(() => accessPassword.focus(), 60);
+      }
+
+      function closeAccessPrompt() {
+        accessModal.classList.remove("is-open");
+        if (!modal.classList.contains("is-open")) {
+          document.body.style.overflow = "";
+        }
+      }
+
+      function requestPage(page) {
+        if (page === "trending" && !hasTrendingAccess()) {
+          openAccessPrompt();
+          return;
+        }
+        setPage(page);
+      }
+
+      function setPage(page) {
+        state.page = page;
+        document.querySelectorAll(".page").forEach((section) => {
+          section.classList.toggle("is-active", section.id === `page-${page}`);
+        });
+        document.querySelectorAll(".nav-item").forEach((item) => {
+          item.classList.toggle("is-active", item.dataset.page === page);
+        });
+        document.body.classList.remove("has-sidebar");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function currentMoney() {
+        return `${state.currency} ${formatBalance(balanceInput.value)}`;
+      }
+
+      function formatBalance(value) {
+        const normalized = String(value).replace(/[^\d.]/g, "");
+        const number = Number.parseFloat(normalized);
+        return Number.isFinite(number) ? number.toFixed(2) : "0.00";
+      }
+
+      let currentGame = null;
+
+      async function requestLaunchUrl(game) {
+        const response = await fetch("/api/hub88/launch", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            game_code: game.game_code || game.id || game.name,
+            currency: state.currency,
+            game_currency: state.currency,
+            balance: formatBalance(balanceInput.value),
+            rtp_mode: state.rtpMode,
+            language: state.lang,
+            country: selectedCountry(),
+            platform: selectedPlatform(),
+            user: state.hub88User
+          })
+        });
+        if (!response.ok) throw new Error("launch failed");
+        const result = await response.json();
+        if (result.user) state.hub88User = result.user;
+        return result;
+      }
+
+      function resetGameStage() {
+        fakeIframe.querySelectorAll("iframe").forEach((iframe) => iframe.remove());
+        const loader = fakeIframe.querySelector(".loader");
+        if (loader) loader.style.display = "grid";
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          "\"": "&quot;",
+          "'": "&#39;"
+        })[char]);
+      }
+
+      function embedMockGame(game, launch) {
+        const loader = fakeIframe.querySelector(".loader");
+        if (loader) loader.style.display = "none";
+        const iframe = document.createElement("iframe");
+        iframe.title = `${game.name} Demo`;
+        const mockInitialBalance = Number(formatBalance(balanceInput.value));
+        const mockRtpLabel = state.rtpMode === "100" ? "100 RTP" : (state.lang === "en" ? "Standard RTP" : "Обычный RTP");
+        iframe.srcdoc = `
+          <!doctype html>
+          <html>
+            <head>
+              <meta charset="utf-8" />
+              <style>
+                html,body{height:100%;margin:0;background:#070713;color:#fff;font-family:Inter,Arial,sans-serif;overflow:hidden}
+                body{display:grid;place-items:center;background:radial-gradient(circle at 70% 20%,rgba(155,77,255,.38),transparent 240px),linear-gradient(135deg,#12142a,#070713)}
+                .demo{width:100%;height:100%;display:grid;grid-template-rows:auto 1fr auto;padding:22px;box-sizing:border-box}
+                .top{display:flex;justify-content:space-between;gap:14px;color:#cfc8e8;font-size:13px}
+                .slot{display:grid;place-items:center;text-align:center}
+                .symbol{width:116px;height:116px;border-radius:28px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(177,102,255,.42),rgba(38,215,255,.18));box-shadow:0 0 48px rgba(177,102,255,.34);font-size:46px;font-weight:950;margin:0 auto 18px}
+                .machine{display:grid;gap:14px;margin-top:22px}
+                .reels{display:flex;justify-content:center;gap:10px}
+                .reel{width:86px;height:76px;border-radius:18px;display:grid;place-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(157,132,255,.24);box-shadow:inset 0 0 24px rgba(155,77,255,.12);font-size:25px;font-weight:950}
+                .status{min-height:24px;color:#d8d1ee;font-weight:800}
+                h1{margin:0;font-size:34px;line-height:1.05}
+                p{margin:10px 0 0;color:#bdb6d7}
+                .bottom{display:flex;justify-content:space-between;align-items:center;gap:12px}
+                .pill{padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(157,132,255,.22);font-weight:800}
+                .spin{padding:13px 28px;border:0;border-radius:14px;background:linear-gradient(135deg,#b14dff,#6d5cff);color:#fff;font-weight:950;box-shadow:0 0 34px rgba(155,77,255,.32)}
+                .spin:disabled{cursor:not-allowed;filter:grayscale(.4);opacity:.68}
+              </style>
+            </head>
+            <body>
+              <div class="demo">
+                <div class="top">
+                  <span>Hub88 mock session</span>
+                  <span>${escapeHtml(mockRtpLabel)} · ${escapeHtml(launch.currency || state.currency)} <b id="balanceAmount">${escapeHtml(formatBalance(balanceInput.value))}</b></span>
+                </div>
+                <div class="slot">
+                  <div>
+                    <div class="symbol">${escapeHtml(iconSymbol(game.symbol || game.name))}</div>
+                    <h1>${escapeHtml(game.name)}</h1>
+                    <div class="machine">
+                      <div class="reels" aria-label="Demo reels">
+                        <div class="reel">W</div>
+                        <div class="reel">7</div>
+                        <div class="reel">88</div>
+                      </div>
+                      <div class="status" id="spinStatus">Bet 100.00 - press SPIN</div>
+                    </div>
+                    <p>${escapeHtml(game.provider || "Hub88")} · API: ${escapeHtml(game.game_code || game.id || "mock")}</p>
+                  </div>
+                </div>
+                <div class="bottom">
+                  <span class="pill">Demo only - Bet 100.00</span>
+                  <button class="spin" id="spinButton" type="button">SPIN</button>
+                </div>
+              </div>
+              <script>
+                (() => {
+                  let balance = ${Number.isFinite(mockInitialBalance) ? mockInitialBalance : 0};
+                  const bet = 100;
+                  const symbols = ["W", "7", "88", "BAR", "CPA", "X2"];
+                  const reels = Array.from(document.querySelectorAll(".reel"));
+                  const balanceAmount = document.querySelector("#balanceAmount");
+                  const status = document.querySelector("#spinStatus");
+                  const spinButton = document.querySelector("#spinButton");
+
+                  function format(value) {
+                    return Math.max(0, value).toFixed(2);
+                  }
+
+                  function draw(values) {
+                    reels.forEach((reel, index) => {
+                      reel.textContent = values[index];
+                    });
+                  }
+
+                  function updateBalance() {
+                    balanceAmount.textContent = format(balance);
+                  }
+
+                  spinButton.addEventListener("click", () => {
+                    if (balance < bet) {
+                      status.textContent = "Not enough demo balance";
+                      return;
+                    }
+
+                    balance -= bet;
+                    updateBalance();
+                    spinButton.disabled = true;
+                    status.textContent = "Spinning...";
+
+                    let ticks = 0;
+                    const timer = setInterval(() => {
+                      draw(reels.map(() => symbols[Math.floor(Math.random() * symbols.length)]));
+                      ticks += 1;
+                      if (ticks < 14) return;
+
+                      clearInterval(timer);
+                      const result = reels.map(() => symbols[Math.floor(Math.random() * symbols.length)]);
+                      draw(result);
+
+                      const counts = result.reduce((acc, item) => {
+                        acc[item] = (acc[item] || 0) + 1;
+                        return acc;
+                      }, {});
+                      const best = Math.max(...Object.values(counts));
+                      const payout = best === 3 ? bet * 10 : best === 2 ? bet * 2 : 0;
+                      balance += payout;
+                      updateBalance();
+                      status.textContent = payout ? "Win " + format(payout) : "No win, try again";
+                      spinButton.disabled = false;
+                    }, 70);
+                  });
+
+                  updateBalance();
+                })();
+              <\/script>
+            </body>
+          </html>
+        `;
+        iframe.allow = "fullscreen; autoplay; clipboard-read; clipboard-write";
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.border = "0";
+        iframe.style.borderRadius = "20px";
+        fakeIframe.appendChild(iframe);
+        return true;
+      }
+
+      function embedLaunchUrl(url, game, launch = {}) {
+        if (!url || url.startsWith("about:blank") || launch.mock) {
+          return embedMockGame(game, launch);
+        }
+        const loader = fakeIframe.querySelector(".loader");
+        if (loader) loader.style.display = "none";
+        const iframe = document.createElement("iframe");
+        iframe.src = url;
+        iframe.title = "Hub88 Demo Game";
+        iframe.allow = "fullscreen; autoplay; clipboard-read; clipboard-write";
+        iframe.referrerPolicy = "no-referrer-when-downgrade";
+        iframe.style.width = "100%";
+        iframe.style.height = "100%";
+        iframe.style.border = "0";
+        iframe.style.borderRadius = "20px";
+        fakeIframe.appendChild(iframe);
+        return true;
+      }
+
+      async function openGame(game) {
+        const labels = t();
+        currentGame = game;
+        resetGameStage();
+        modalTitle.textContent = game.name;
+        modalMeta.textContent = `${currentMoney()} · ${game.provider || labels.demoProvider}`;
+        loaderMeta.textContent = `${game.provider || "Wind"} ${labels.demoSession}`;
+        loaderTitle.textContent = labels.modalStarting;
+        fakeIframe.classList.remove("ready");
+        modal.classList.add("is-open");
+        document.body.style.overflow = "hidden";
+        window.setTimeout(() => {
+          fakeIframe.classList.add("ready");
+          loaderTitle.textContent = `${game.name} ${labels.modalReady}`;
+        }, 650);
+        try {
+          const launch = await requestLaunchUrl(game);
+          modalMeta.textContent = `${launch.currency || state.currency} ${formatBalance(balanceInput.value)} · ${game.provider || labels.demoProvider}`;
+          if (embedLaunchUrl(launch.url, game, launch)) {
+            fakeIframe.classList.add("ready");
+          }
+        } catch {
+          /* Keep the existing mock modal behavior if the backend or Hub88 is unavailable. */
+        }
+      }
+
+      function closeGame() {
+        modal.classList.remove("is-open");
+        document.body.style.overflow = "";
+      }
+
+      function initPartnerLinks() {
+        document.querySelectorAll(".partner-link").forEach((link) => {
+          link.href = partnerUrl;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+        });
+      }
+
+      function applyLanguage() {
+        const labels = t();
+        document.documentElement.lang = state.lang;
+        document.title = state.lang === "ru" ? "Wind-Demo" : "Wind-Demo";
+        searchInput.placeholder = labels.placeholder;
+        syncAuthCopy();
+        updateProfileButton();
+        syncAccessCopy();
+
+        if (sidePromoImage) {
+          sidePromoImage.src = labels.sidePromo;
+        }
+
+        labels.text.forEach(([selector, value]) => {
+          const element = document.querySelector(selector);
+          if (element) element.textContent = value;
+        });
+
+        labels.html.forEach(([selector, value]) => {
+          const element = document.querySelector(selector);
+          if (element) element.innerHTML = value;
+        });
+
+        labels.textNodes.forEach(([selector, value]) => {
+          const element = document.querySelector(selector);
+          if (element && element.childNodes.length) {
+            element.childNodes[0].nodeValue = `${value} `;
+          }
+        });
+
+        labels.indexedText.forEach(([selector, values]) => {
+          document.querySelectorAll(selector).forEach((element, index) => {
+            if (values[index]) element.textContent = values[index];
+          });
+        });
+
+        labels.attrs.forEach(([selector, attr, value]) => {
+          const element = document.querySelector(selector);
+          if (element) element.setAttribute(attr, value);
+        });
+
+        updateProfileButton();
+        setRtpMode(state.rtpMode);
+
+        langButtons.forEach((item) => {
+          const isActive = item.dataset.lang === state.lang;
+          item.classList.toggle("is-active", isActive);
+          item.setAttribute("aria-pressed", String(isActive));
+        });
+
+        renderProviderFilters();
+        renderGames();
+        renderTrending();
+        renderBenefits();
+      }
+
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", () => requestPage(item.dataset.page));
+      });
+
+      document.querySelectorAll("[data-page-link]").forEach((button) => {
+        button.addEventListener("click", () => requestPage(button.dataset.pageLink));
+      });
+
+      profileButton.addEventListener("click", () => {
+        if (!state.authUser) openAuthModal();
+      });
+
+      authForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const email = authEmail.value.trim();
+        const password = authPassword.value;
+        if (!email || password.length < 6) {
+          authError.textContent = t().authError;
+          return;
+        }
+        saveAuthUser({
+          email,
+          createdAt: new Date().toISOString()
+        });
+        closeAuthModal();
+      });
+
+      document.querySelector("#authCancel").addEventListener("click", closeAuthModal);
+
+      authModal.addEventListener("click", (event) => {
+        if (event.target === authModal) closeAuthModal();
+      });
+
+      accessForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (accessPassword.value.trim().toUpperCase() === trendingPassword) {
+          rememberTrendingAccess();
+          closeAccessPrompt();
+          setPage("trending");
+          return;
+        }
+        accessError.textContent = t().accessError;
+        accessPassword.select();
+      });
+
+      document.querySelector("#accessCancel").addEventListener("click", closeAccessPrompt);
+
+      accessModal.addEventListener("click", (event) => {
+        if (event.target === accessModal) closeAccessPrompt();
+      });
+
+      document.querySelector("#desktopMenuBtn").addEventListener("click", () => {
+        appShell.classList.toggle("is-collapsed");
+        requestAnimationFrame(fillAllGameGridPlaceholders);
+      });
+
+      document.querySelector("#collapseBtn").addEventListener("click", () => {
+        if (window.innerWidth <= 1080) {
+          document.body.classList.remove("has-sidebar");
+        } else {
+          appShell.classList.add("is-collapsed");
+        }
+        requestAnimationFrame(fillAllGameGridPlaceholders);
+      });
+
+      document.querySelector("#mobileMenuBtn").addEventListener("click", () => {
+        document.body.classList.add("has-sidebar");
+        requestAnimationFrame(fillAllGameGridPlaceholders);
+      });
+
+      window.addEventListener("resize", () => {
+        requestAnimationFrame(fillAllGameGridPlaceholders);
+      });
+
+      searchInput.addEventListener("input", (event) => {
+        state.search = event.target.value.trim();
+        renderGames();
+      });
+
+      balanceInput.addEventListener("input", () => {
+        const [main = "", decimals = ""] = balanceInput.value.replace(/[^\d.]/g, "").split(".");
+        balanceInput.value = decimals.length || balanceInput.value.includes(".")
+          ? `${main.slice(0, 9)}.${decimals.slice(0, 2)}`
+          : main.slice(0, 9);
+      });
+
+      balanceInput.addEventListener("blur", () => {
+        balanceInput.value = formatBalance(balanceInput.value);
+      });
+
+      function setCurrency(option) {
+        state.currency = option.dataset.currency;
+        currencyCode.textContent = state.currency;
+        currencyFlag.className = `currency-flag ${option.dataset.flag}`;
+        if (balanceCoin && option.dataset.coin) {
+          balanceCoin.src = option.dataset.coin;
+          balanceCoin.alt = state.currency;
+        }
+        currencyOptions.forEach((item) => {
+          const isActive = item === option;
+          item.classList.toggle("is-active", isActive);
+          item.setAttribute("aria-selected", String(isActive));
+        });
+        currencyControl.classList.remove("is-open");
+        currencyToggle.setAttribute("aria-expanded", "false");
+        if (modal.classList.contains("is-open") && currentGame) {
+          openGame(currentGame);
+        }
+      }
+
+      function setRtpMode(mode) {
+        state.rtpMode = mode === "standard" ? "standard" : "100";
+        rtpOptions.forEach((option) => {
+          const isActive = option.dataset.rtp === state.rtpMode;
+          option.classList.toggle("is-active", isActive);
+          option.setAttribute("aria-pressed", String(isActive));
+        });
+        if (modal.classList.contains("is-open") && currentGame) {
+          openGame(currentGame);
+        }
+      }
+
+      currencyToggle.addEventListener("click", () => {
+        const isOpen = currencyControl.classList.toggle("is-open");
+        currencyToggle.setAttribute("aria-expanded", String(isOpen));
+      });
+
+      currencyOptions.forEach((option) => {
+        option.addEventListener("click", () => setCurrency(option));
+      });
+
+      rtpOptions.forEach((option) => {
+        option.addEventListener("click", () => setRtpMode(option.dataset.rtp));
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!currencyControl.contains(event.target)) {
+          currencyControl.classList.remove("is-open");
+          currencyToggle.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      langButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          state.lang = button.dataset.lang;
+          applyLanguage();
+          loadHub88Catalog();
+        });
+      });
+
+      document.querySelector("#closeModal").addEventListener("click", closeGame);
+      document.querySelector("#reloadBtn").addEventListener("click", () => {
+        const labels = t();
+        fakeIframe.classList.remove("ready");
+        loaderTitle.textContent = labels.balanceUpdating;
+        window.setTimeout(() => {
+          fakeIframe.classList.add("ready");
+          loaderTitle.textContent = labels.balanceApplied;
+          if (currentGame) openGame(currentGame);
+        }, 520);
+      });
+      document.querySelector("#currencyBtn").addEventListener("click", () => {
+        loaderTitle.textContent = `${t().currencyLabel}: ${state.currency}`;
+      });
+      document.querySelector("#fullscreenBtn").addEventListener("click", () => {
+        document.querySelector(".modal-panel").requestFullscreen?.();
+      });
+      modal.addEventListener("click", (event) => {
+        if (event.target === modal) closeGame();
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          if (authModal.classList.contains("is-open")) closeAuthModal();
+          if (accessModal.classList.contains("is-open")) closeAccessPrompt();
+          closeGame();
+        }
+      });
+
+      initPartnerLinks();
+      loadAuthUser();
+      applyLanguage();
+      loadHub88Catalog();
+    </script>
+  </body>
+</html>
