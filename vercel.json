@@ -1,0 +1,30 @@
+{
+  "version": 2,
+  "functions": {
+    "api/**/*.js": {
+      "includeFiles": "backend/**"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/user/info",
+      "destination": "/api/wallet?walletPath=/user/info"
+    },
+    {
+      "source": "/user/balance",
+      "destination": "/api/wallet?walletPath=/user/balance"
+    },
+    {
+      "source": "/transaction/bet",
+      "destination": "/api/wallet?walletPath=/transaction/bet"
+    },
+    {
+      "source": "/transaction/win",
+      "destination": "/api/wallet?walletPath=/transaction/win"
+    },
+    {
+      "source": "/transaction/rollback",
+      "destination": "/api/wallet?walletPath=/transaction/rollback"
+    }
+  ]
+}
